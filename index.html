@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Aura — Pendamping Refleksi Kerja</title>
+    <meta name="description" content="Pendamping refleksi harian untuk pekerja: catat hari kerjamu, pantau beban dari hari ke hari, dan dapatkan satu langkah kecil yang masuk akal." />
+    <meta property="og:title" content="Aura — Pendamping Refleksi Kerja" />
+    <meta property="og:description" content="Pendamping refleksi harian untuk pekerja: catat hari kerjamu, pantau beban dari hari ke hari, dan dapatkan satu langkah kecil yang masuk akal." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#F6F4EF" id="meta-theme-color" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Font Awesome Free 6.5.1 CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Theme flash prevention script -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('aura_theme') || 'system';
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var effective = saved === 'system' ? (prefersDark ? 'dark' : 'light') : saved;
+          document.documentElement.setAttribute('data-theme', effective);
+          document.documentElement.style.colorScheme = effective;
+          var metaTheme = document.getElementById('meta-theme-color');
+          if (metaTheme) {
+            metaTheme.setAttribute('content', effective === 'dark' ? '#141414' : '#F6F4EF');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

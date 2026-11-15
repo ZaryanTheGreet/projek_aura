@@ -1,0 +1,1870 @@
+{
+  "meta": {
+    "name": "Aura - prompt build frontend MVP",
+    "version": "3.2",
+    "language_of_prompt": "id",
+    "how_to_use": "Berikan seluruh file ini ke AI agent sebagai satu-satunya sumber konteks. Jika ada konflik antar bagian, ikuti urutan di rules_priority.",
+    "rules_priority": [
+      "1. safety_rules dan privacy",
+      "2. scope (frontend saja, data dummy)",
+      "3. design_system dan hard_bans",
+      "4. features sesuai tier",
+      "5. preferensi lain"
+    ],
+    "changelog": [
+      "Latihan: panduan visual per langkah (napas, hitung ketuk, pose, timer, tulis), tombol Sebelumnya/Jeda, layar sebelum mulai, konfirmasi keluar.",
+      "Ekspor data: PDF yang mudah dibaca menjadi default, JSON jadi opsi kedua. Satu komponen dokumen dipakai bersama F8.",
+      "Pengingat: notifikasi lokal best-effort + kalender .ics (F10). Web Push server tetap pasca-MVP.",
+      "Tema: terang, gelap, otomatis (F11). Token dua tema dibuat sejak awal.",
+      "Kontradiksi diperbaiki: motion per latihan diganti visual per langkah, larangan pose diperlonggar terbatas, aturan 'pengingat hanya saat app dibuka' diganti F10, kontras mode gelap dan border kontrol dihitung ulang.",
+      "Dasbor HRD agregat (F12) dan form login HRD ditambahkan. Teks privasi, scope, dan definition_of_done disesuaikan agar tidak bertentangan."
+    ]
+  },
+  "role": "Kamu adalah frontend engineer senior sekaligus product designer. Tugasmu membangun MVP frontend Aura: aplikasi web refleksi harian untuk pekerja perusahaan. Semua data dummy. Backend dibuat orang lain nanti.",
+  "task_type": "FRONTEND_MVP_WITH_DUMMY_DATA",
+  "first_steps_required": [
+    "0. Cek apakah sudah ada proyek. Jika ADA: baca struktur, routing, komponen, token CSS, lalu ubah secara bertahap tanpa menulis ulang logika. Jika BELUM ada: buat proyek baru dengan stack di tech.stack.",
+    "1. Tulis rencana singkat (maks 10 baris): struktur folder, token desain, daftar layar tier P0.",
+    "2. Bangun token CSS dan komponen dasar dulu (Button, Card, Chip, Pill, Skeleton, Companion), baru layar.",
+    "3. Bangun tier P0 sampai rapi dan selesai sebelum menyentuh P1. Jangan membangun tier berikutnya sebelum P0 lolos definition_of_done.",
+    "4. Jika ada hal ambigu, tanyakan SATU pertanyaan lalu lanjut dengan asumsi terbaik."
+  ],
+  "project": {
+    "name": "Aura",
+    "one_liner": "Pendamping refleksi harian untuk pekerja: catat hari kerjamu lewat tulisan atau check-in 30 detik, lihat bebanmu dari hari ke hari, dan dapat satu langkah kecil yang masuk akal.",
+    "context": "Dibuat untuk lomba. Juri menilai keunikan dan keindahan UI. Pengguna sasaran adalah pekerja perusahaan (kantor, hybrid, WFH). Kualitas visual, detail interaksi, dan kejelasan lebih penting daripada jumlah fitur.",
+    "positioning": "Pendamping refleksi. BUKAN alat diagnosis, bukan terapi, bukan alat penilaian kinerja. Dilarang menulis kalimat seperti 'kamu mengalami burnout', 'terdiagnosis', 'kronis', 'latihan ini mengobati', 'dijamin berhasil'. Pakai bahasa seperti 'bebanmu sedang naik', 'coba langkah kecil ini', 'kalau terasa berat, bicara dengan orang yang kamu percaya'.",
+    "language": "Semua teks UI Bahasa Indonesia, hangat, santai tapi sopan. Pakai 'kamu'. Dilarang 'lo/gue/Bro' dan bahasa formal kaku. Kalimat sentence case.",
+    "audience_shift": "Semua teks dan data dummy berkonteks pekerja (pekerjaan, deadline proyek, lembur, rapat, atasan, mentor). Tidak ada konteks mahasiswa.",
+    "secondary_audience": "HRD perusahaan, hanya untuk melihat ringkasan agregat (lihat features.F12_hr_dashboard)."
+  },
+  "scope": {
+    "build": "Hanya frontend: halaman karyawan, dasbor HRD agregat, komponen, state, animasi, service layer, dan data dummy.",
+    "do_not_build": [
+      "backend, database, integrasi Gemini asli, auth asli (login hanya simulasi)",
+      "streak, lencana, poin, papan peringkat, gamifikasi apa pun",
+      "Web Push dari server dan nudge WhatsApp (butuh backend). Notifikasi lokal best-effort dan kalender .ics BOLEH dan dibangun (lihat features.F10_reminders).",
+      "peringkat karyawan, penilaian kinerja, dan tampilan data atau teks individu kepada perusahaan atau atasan. Dasbor HRD hanya agregat (features.F12_hr_dashboard)."
+    ],
+    "api_strategy": "Satu service layer (src/api.ts) dengan flag USE_MOCK = true. Semua layar HANYA memanggil fungsi di service layer ini. Saat backend siap, cukup ganti flag dan base URL. Mock punya delay buatan 800-1500 ms agar loading state terlihat. Data mock disimpan di localStorage agar konsisten antar sesi."
+  },
+  "tech": {
+    "stack": "React + TypeScript + Vite. CSS biasa dengan CSS variables (satu file token + CSS per komponen atau CSS Modules).",
+    "do_not_use": [
+      "shadcn/ui",
+      "daisyUI",
+      "Tailwind",
+      "UI kit apa pun",
+      "library chart",
+      "library animasi",
+      "state manager besar"
+    ],
+    "routing": "State sederhana atau react-router-dom saja. Tidak ada library besar lain.",
+    "charts": "Gambar sendiri dengan SVG inline (polyline, rect). Garis solid, tanpa gradasi, tanpa tema default library.",
+    "icons": {
+      "library": "Font Awesome Free via CDN",
+      "cdn_link": "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" crossorigin=\"anonymous\" referrerpolicy=\"no-referrer\" />",
+      "rules": [
+        "Satu gaya saja: fa-solid.",
+        "Ukuran konsisten: 16, 20, atau 24 px.",
+        "Jangan bungkus ikon dengan lingkaran berwarna sebagai dekorasi.",
+        "Ikon hanya untuk fungsi (navigasi, tombol, status). Dilarang emoji sebagai ikon.",
+        "Dilarang ikon sparkle, bintang, atau robot untuk menandakan AI."
+      ],
+      "map": {
+        "nav_home": "fa-house",
+        "nav_write": "fa-pen-to-square",
+        "nav_trend": "fa-chart-line",
+        "history": "fa-clock-rotate-left",
+        "settings": "fa-gear",
+        "logout": "fa-right-from-bracket",
+        "tip": "fa-lightbulb",
+        "close": "fa-xmark",
+        "care": "fa-hand-holding-heart",
+        "exercise": "fa-leaf",
+        "timer": "fa-stopwatch",
+        "checkin": "fa-bolt",
+        "followup": "fa-comment-dots",
+        "trigger_map": "fa-chart-simple",
+        "contact": "fa-user-group",
+        "break_plan": "fa-moon",
+        "task": "fa-list-check",
+        "report": "fa-file-lines",
+        "export": "fa-download",
+        "delete": "fa-trash"
+      }
+    },
+    "typeface": {
+      "primary": "Plus Jakarta Sans (Google Fonts, bobot 400, 500, 600, 700)",
+      "fallback": "system-ui, -apple-system, 'Segoe UI', sans-serif",
+      "rules": "Satu keluarga font saja. Hierarki lewat ukuran dan bobot."
+    },
+    "ai_note": "Tidak ada pelatihan model dan tidak ada machine learning. Pada versi dengan backend, analisis jurnal memakai model Gemini gratis lewat backend (lihat ai_integration_plan). Di build ini, analisis dibuat dengan logika if-else dan kata kunci sederhana di service layer.",
+    "pwa": "Tambahkan manifest.webmanifest dan public/sw.js minimal (hanya notificationclick dan showNotification). Tanpa library, tanpa caching offline. Service worker butuh HTTPS atau localhost."
+  },
+  "design_philosophy": {
+    "goal": "Minimalis, tenang, dan benar-benar enak dipakai oleh orang yang sedang lelah. Setiap keputusan desain harus punya alasan, bukan hiasan.",
+    "honest_claim_policy": [
+      "Desain UI tidak bisa dibuktikan 'menurunkan burnout'. Yang bisa dilakukan adalah menerapkan prinsip yang punya dasar riset dan tidak memperburuk keadaan.",
+      "Dilarang menulis di UI, README, atau materi lomba bahwa Aura 'menurunkan' atau 'menyembuhkan' burnout. Boleh: 'dirancang berdasarkan prinsip jeda singkat dan pemulihan dari kerja; belum diuji secara klinis'.",
+      "Untuk pembuktian nanti: pilot kecil dengan instrumen tervalidasi pra dan pasca pemakaian (mis. Copenhagen Burnout Inventory; cek lisensi). Di luar build ini."
+    ],
+    "evidence_basis": {
+      "note": "Ringkasan dari pengetahuan umum, belum diverifikasi ulang. verify_before_citing: true. Jangan mengutip nama peneliti atau angka di UI.",
+      "items": [
+        {
+          "topic": "Jeda singkat (micro-break)",
+          "finding": "Tinjauan sistematis menunjukkan jeda pendek saat bekerja berefek kecil tapi positif pada kelelahan dan semangat.",
+          "strength": "kecil-sedang",
+          "ux": "Latihan 2-10 menit, ada versi 2 menit antar rapat. Satu langkah per layar."
+        },
+        {
+          "topic": "Detasemen psikologis dari kerja",
+          "finding": "Riset pemulihan kerja mengaitkan kemampuan melepas pikiran dari kerja setelah jam kerja dengan kelelahan yang lebih rendah. Sebagian besar korelasional.",
+          "strength": "sedang, korelasional",
+          "ux": "Ritual menutup hari kerja (ex_shutdown, F6), kalimat penutup 'Hari ini cukup.'"
+        },
+        {
+          "topic": "Intervensi digital untuk stres kerja",
+          "finding": "Efek umumnya kecil sampai sedang pada stres, lebih kecil pada burnout, dan banyak pengguna berhenti memakai.",
+          "strength": "kecil",
+          "ux": "Sesi singkat, gesekan rendah, tanpa rasa bersalah, tanpa streak, klaim realistis."
+        },
+        {
+          "topic": "Napas lambat dan relaksasi",
+          "finding": "Efek sederhana pada stres yang dilaporkan sendiri. Bukan terapi.",
+          "strength": "kecil-sedang",
+          "ux": "Disajikan sebagai langkah kecil untuk rileks, tanpa janji medis."
+        },
+        {
+          "topic": "Refleksi dan pemantauan diri",
+          "finding": "Membantu menyadari pola, tapi bukti menulis ekspresif campur aduk dan tidak cocok untuk semua orang.",
+          "strength": "campuran",
+          "ux": "Menulis opsional. Ada check-in tap-only. Bahasa pola 'sering muncul bersamaan dengan', bukan sebab-akibat."
+        },
+        {
+          "topic": "Beban kognitif antarmuka",
+          "finding": "Lebih sedikit pilihan dan elemen per layar menurunkan usaha mental (prinsip HCI umum).",
+          "strength": "prinsip desain",
+          "ux": "Satu aksi utama per layar, ruang kosong lapang, maksimal satu keputusan per langkah."
+        },
+        {
+          "topic": "Tekanan dan rasa bersalah dari produk",
+          "finding": "Streak, pengingat menekan, dan notifikasi berlebihan menambah beban pada orang yang sudah lelah.",
+          "strength": "prinsip desain",
+          "ux": "Tanpa streak atau poin, pengingat lembut dan bisa dimatikan, tombol 'Lewati' sama menonjol."
+        }
+      ]
+    },
+    "principles_to_rules": [
+      "Gesekan rendah: check-in selesai kurang dari 30 detik tanpa mengetik. Menulis jurnal tidak pernah wajib.",
+      "Satu aksi utama per layar. Satu tombol utama hitam per layar.",
+      "Sensori tenang: tidak ada merah alarm, tidak ada kedip, tidak ada suara, tidak ada animasi yang menuntut perhatian.",
+      "Otonomi: semua yang bisa dilewati punya tombol 'Lewati' setara. Semua pengingat bisa dimatikan.",
+      "Langkah kecil dan spesifik: saran selalu bisa dikerjakan dalam 10 menit atau kurang dan terkait pemicu.",
+      "Nada welas asih: validasi singkat sebelum saran, tanpa menghakimi, tanpa 'kamu harus'.",
+      "Aplikasi bukan tugas kerja baru: sesi pendek, tidak ada target harian, tidak ada teks yang membuat bersalah.",
+      "Jujur soal batas: selalu jelas bahwa Aura bukan diagnosis dan bukan pengganti bantuan profesional."
+    ]
+  },
+  "design_system": {
+    "direction": "Minimalis tapi modern. Tenang, lapang, banyak ruang kosong, hierarki tipografi tegas. Rasa aplikasi jurnal yang kalem dan editorial, bukan landing page startup AI.",
+    "one_bold_element": "Hanya SATU hal yang boleh menonjol: karakter pendamping dan momen hitung naik di layar Hasil. Semua yang lain tenang dan disiplin. Jika ragu antara ramai dan bersih, pilih bersih.",
+    "hard_bans": [
+      "Semua gradasi: linear, radial, conic, mesh, gradient text, gradient border, gradient pada chart.",
+      "Glow, neon, blur glassmorphism, bayangan berwarna.",
+      "Palet ungu-biru khas 'AI slop'.",
+      "Emoji sebagai ikon atau dekorasi.",
+      "Ikon sparkle, bintang, atau robot untuk menandakan AI.",
+      "Copy generik: 'Unleash the power of AI', 'Welcome to the future', 'Revolutionize', lorem ipsum.",
+      "Grid kartu identik dengan radius, bayangan, dan ikon bulat yang sama.",
+      "Hero besar rata tengah dengan dua tombol berdampingan.",
+      "Menumpuk bayangan tebal. Pemisah utama adalah border 1px."
+    ],
+    "anti_slop_extra": [
+      "Tata letak default rata kiri. Rata tengah hanya untuk momen khusus (mis. layar penutup latihan).",
+      "Dilarang label ALL CAPS di atas heading (eyebrow), string meta dengan titik tengah ('A · B · C'), label berpola 'KATA - fragmen', dan tanda panah di setiap tombol.",
+      "Dilarang animasi masuk fade-slide pada setiap section. Animasi masuk hanya di layar Hasil. Hover dan transisi hanya untuk umpan balik aksi.",
+      "Dilarang tiga kartu fitur sejajar dengan ikon bulat. Setiap kartu harus punya tujuan jelas, bukan pengisi grid.",
+      "Teks spesifik dan manusiawi, ditulis dari sudut pandang pengguna, bukan slogan."
+    ],
+    "colors": {
+      "note": "Semua warna SOLID. Aksen hanya untuk makna status.",
+      "light": {
+        "background": "#F6F4EF",
+        "surface": "#FFFFFF",
+        "ink": "#1A1A1A",
+        "ink_muted": "#6B6B6B",
+        "border": "#E4E0D8",
+        "primary_button_bg": "#1A1A1A",
+        "primary_button_text": "#FFFFFF",
+        "border_control": "#8C877D",
+        "skeleton": "#E4E0D8"
+      },
+      "status_zones": {
+        "calm_0_39": {
+          "solid": "#3F8F6B",
+          "tint_bg": "#E6F2EC",
+          "label": "Tenang"
+        },
+        "watch_40_69": {
+          "solid": "#D99A1E",
+          "tint_bg": "#FBF1DC",
+          "label": "Waspada"
+        },
+        "heavy_70_100": {
+          "solid": "#C84B4B",
+          "tint_bg": "#F8E4E4",
+          "label": "Butuh istirahat"
+        }
+      },
+      "zone_usage": "Warna zona hanya untuk status indeks dan SELALU disertai label teks. Pill zona: latar tint, titik solid, teks ink (bukan teks warna zona, demi kontras). Jangan dipakai untuk dekorasi, logo, loading, atau latihan.",
+      "dark_mode": {
+        "status": "Dibangun sebagai token sejak P0. Tombol pilihan tema di P1.",
+        "background": "#141414",
+        "surface": "#1C1C1C",
+        "ink": "#F2F2F2",
+        "ink_muted": "#A3A3A3",
+        "border": "#2A2A2A",
+        "border_control": "#7A7A7A",
+        "primary_button_bg": "#F2F2F2",
+        "primary_button_text": "#141414",
+        "skeleton": "#2A2A2A",
+        "scrim": "rgba(0,0,0,0.6)",
+        "status_zones": {
+          "calm": {
+            "solid": "#3F8F6B",
+            "tint_bg": "#1B2F26"
+          },
+          "watch": {
+            "solid": "#D99A1E",
+            "tint_bg": "#3A2F14"
+          },
+          "heavy": {
+            "solid": "#C84B4B",
+            "tint_bg": "#3A1E1E"
+          }
+        },
+        "notes": [
+          "Tidak memakai hitam murni (#000) atau putih murni (#FFF) agar tidak menyilaukan di malam hari.",
+          "ink_muted gelap dinaikkan ke #A3A3A3 karena #6B6B6B tidak lolos AA di latar gelap.",
+          "Pill zona memakai teks ink, latar tint gelap. Titik solid tetap sama."
+        ]
+      },
+      "border_control_rule": "Input, textarea, dan elemen kontrol yang hanya dikenali lewat batasnya memakai border_control (kontras minimal 3:1). Kartu dan pemisah tetap memakai border tipis biasa.",
+      "companion_face_ink": "Wajah Companion pada isian zona selalu #1A1A1A di kedua tema (kontras terhadap kuning dan hijau). Pada state neutral, wajah memakai ink tema."
+    },
+    "spacing_and_shape": {
+      "spacing_scale": "4, 8, 12, 16, 24, 32, 48, 64 px. Tidak ada angka di luar skala.",
+      "radius": "Dua nilai saja: 12px untuk kartu dan input, 999px untuk tombol dan pill.",
+      "elevation": "Datar. Pemisah utama border 1px. Bayangan netral sangat halus hanya untuk overlay (bottom sheet, modal).",
+      "layout": "Mobile-first (acuan 390px). Desktop: konten dibatasi lebar maksimum 480px dan di-tengah, bottom nav ikut dibatasi lebar yang sama. Pengecualian: dasbor HRD (F12) dioptimalkan untuk desktop, lebar maksimum sekitar 1040px, tetap responsif di mobile."
+    },
+    "typography_scale": {
+      "display_score": "64-80px / 700, tabular-nums, untuk angka indeks",
+      "h1": "28px / 600",
+      "h2": "20px / 600",
+      "body": "16px / 400, line-height 1.6",
+      "caption": "13px / 500, warna ink_muted",
+      "rule": "Angka memakai font-variant-numeric: tabular-nums. Panjang baris di bawah 80 karakter."
+    },
+    "motion": {
+      "principles": "Gerak harus bermakna. Transisi UI 150-400 ms, momen skor hingga 1200 ms. Easing cubic-bezier(0.22, 1, 0.36, 1) atau ease-out.",
+      "rules": [
+        "Animasikan transform dan opacity saja. Pengecualian yang diizinkan: transisi fill pada Companion.",
+        "Hormati prefers-reduced-motion: matikan animasi besar, tampilkan hasil langsung (angka akhir, tanpa count-up), pastikan elemen yang awalnya opacity 0 tetap terlihat.",
+        "Tidak ada animasi berputar terus tanpa tujuan. Loop hanya untuk loading (menunggu) dan napas pada latihan.",
+        "Panduan napas: lingkaran membesar dan mengecil memakai transform scale dengan transition-duration sama dengan durasi fase. Progres memakai scaleX, bukan stroke-dashoffset atau width.",
+        "Reduced motion: panduan napas tetap bisa diikuti lewat teks fase dan angka hitung mundur tanpa animasi scale.",
+        "Pergantian tema instan."
+      ],
+      "signature_moment": "Layar Hasil: angka naik dari 0 ke nilai akhir (count-up ~1200 ms) sambil Companion berubah warna dan bentuk ke zona yang sesuai, lalu kartu muncul bertahap (fade + naik 8px, jeda ~150 ms per kartu)."
+    },
+    "character": {
+      "name": "Companion (aura)",
+      "concept": "Satu bentuk SVG datar dengan wajah sederhana. Tanpa gradasi, tanpa tekstur. Komponen <Companion state mode size />.",
+      "states": {
+        "calm": "Bulat penuh, mata titik, senyum kecil, isian hijau zona.",
+        "watch": "Sedikit gepeng, mata garis datar, mulut lurus, isian kuning zona.",
+        "heavy": "Agak menyusut dan miring, mata sayu, mulut turun tipis, isian merah zona.",
+        "neutral": "Isian surface, garis ink 2px. Dipakai saat loading, latihan, dan pengguna baru."
+      },
+      "usage": {
+        "logo": "Versi sederhana: lingkaran ink dengan dua titik mata dan senyum berwarna background, plus wordmark 'Aura' Plus Jakarta Sans 700. Favicon: bentuk bulat tanpa detail wajah.",
+        "loading": "Saat jurnal atau check-in dikirim, tampilkan Companion neutral dengan mode 'thinking' (napas pelan scale 1 ke 1.03 dan kedip mata via scaleY), teks pendek yang tenang. Bukan spinner generik. Setelah hasil siap, Companion yang sama berubah ke warna zona sambil count-up.",
+        "rules": [
+          "Care mode: Companion statis, tanpa gerak lucu.",
+          "Loading tidak memakai warna zona (hasil belum ada).",
+          "Lucu yang lembut (kedip, miring kepala sedikit), bukan loncat-loncat. Tidak ada klaim bahwa animasi menurunkan stres.",
+          "Pose latihan memakai satu rig Companion berlengan (lihat features.F1_micro_exercises.pose_rig). Dilarang membuat ilustrasi terpisah per latihan."
+        ],
+        "exercise_visuals": "Lihat features.F1_micro_exercises.step_kinds. Field 'motion' tingkat latihan DIHAPUS, diganti jenis langkah."
+      }
+    },
+    "components": {
+      "card": "Latar surface, border 1px, radius 12px, tanpa bayangan.",
+      "primary_button": "Latar ink, teks putih, pill. Satu per layar. Tinggi minimal 48px.",
+      "secondary_button": "Transparan, border 1px, pill. Tidak boleh lebih menonjol dari tombol utama.",
+      "chips": "Pill border 1px. Terpilih: latar ink, teks putih. Skala 1-5 selalu punya label teks tiap level.",
+      "bottom_sheet": "Surface, radius 12px sudut atas, handle netral kecil, scrim netral transparan (tanpa blur). Bayangan netral halus hanya di sini.",
+      "exercise_player": "Layar penuh, latar background tema. Susunan: bar atas (tombol keluar fa-xmark, label 'Langkah 2 dari 5', bar progres tipis dengan transform scaleX), area visual tinggi sekitar 240px, instruksi h1 28px, teks bantu caption, kontrol bawah. Lihat features.F1_micro_exercises untuk jenis langkah dan kontrol.",
+      "trigger_map_bars": "Bar horizontal solid ink (bukan warna zona, karena pemicu bukan status). Label dan angka memakai caption 13px.",
+      "banner": "Kartu tipis border 1px, tanpa warna mencolok, bisa ditutup.",
+      "skeleton": "Blok solid warna border dengan animasi opacity pelan, meniru bentuk konten asli.",
+      "theme_picker": "Sheet kecil atau segmented control tiga opsi (Terang, Gelap, Otomatis) dengan label teks. Pilihan aktif: latar ink, teks kebalikannya.",
+      "notification_setting_card": "Kartu biasa berisi toggle, pemilih jam, pemilih hari (chip Sen sampai Min), dan catatan batas teknis dalam caption."
+    },
+    "theme": {
+      "options": [
+        "Terang",
+        "Gelap",
+        "Otomatis (ikut pengaturan perangkat)"
+      ],
+      "default": "Otomatis",
+      "persistence": "localStorage kunci 'aura_theme' dengan nilai light, dark, atau system.",
+      "no_flash": "Skrip kecil inline di <head> index.html membaca aura_theme, menyelesaikan 'system' lewat matchMedia, lalu memasang atribut data-theme='light'|'dark' dan color-scheme pada <html> sebelum render pertama. Dengarkan perubahan matchMedia saat mode Otomatis.",
+      "css": "Semua warna lewat CSS variables. :root berisi token terang, :root[data-theme='dark'] menimpa token gelap. Dilarang warna hardcode di komponen.",
+      "meta_theme_color": "Perbarui <meta name='theme-color'> saat tema berubah: #F6F4EF (terang), #141414 (gelap).",
+      "switch_motion": "Pergantian tema instan, tanpa transisi, agar tidak berkedip.",
+      "control_placement": "Ikon fa-circle-half-stroke di pojok atas Home membuka pilihan tiga opsi, dan bagian 'Tampilan' di Settings. Jangan pakai fa-moon (sudah dipakai untuk fisik/istirahat dan jeda).",
+      "print_override": "Dokumen cetak selalu memakai tema terang.",
+      "tests": [
+        "Kontras AA untuk teks di kedua tema.",
+        "Chart: pita zona memakai tint gelap di mode gelap.",
+        "Tidak ada kedip tema saat muat ulang."
+      ]
+    }
+  },
+  "concepts": {
+    "two_numbers": {
+      "daily_stress_score": "Skala 1-10 dari satu entri. Label UI: 'Beban hari ini'.",
+      "burnout_index": "Skala 0-100 dari tren entri 7 hari terakhir. Label UI: 'Indeks burnout' dengan keterangan kecil 'Gambaran pola dari catatanmu, bukan diagnosis.' Bernilai null jika entri kurang dari 3.",
+      "rule": "Satu hari berat tidak pernah disebut burnout. Hanya indeks tren yang memakai kata itu, dan tetap bukan diagnosis."
+    },
+    "zones": {
+      "0-39": "calm",
+      "40-69": "watch",
+      "70-100": "heavy"
+    },
+    "scoring_rules": {
+      "status": "Heuristik MVP, BUKAN instrumen tervalidasi. Tulis ini di README.",
+      "daily_stress_score_from_checkin": "score = clamp(round(1 + (0.7*mental_stress + 0.3*energy_drain - 1) * 2.25), 1, 10). Mental diberi bobot lebih besar karena lelah fisik akhir hari itu wajar. Jam tidur TIDAK mengubah skor, hanya saran.",
+      "daily_stress_score_from_journal": "Mock: 3 + 1.5 per kata kunci beban terdeteksi, dibatasi 1-10. Di versi backend skor dari model.",
+      "burnout_index": "Dari maksimal 7 entri terakhir (minimal 3). weighted_mean = rata-rata skor dengan bobot linear 1..n (terbaru paling berat). scaled = (weighted_mean - 1) / 9 * 100. persistence = persen entri dengan skor >= 7. index = round(0.7*scaled + 0.3*persistence)."
+    },
+    "checkin_interpretation": {
+      "note": "Logika if-else deterministik di service layer. Tinggi = nilai >= 4, rendah = nilai <= 3.",
+      "cases": {
+        "berat_ganda": {
+          "if": "mental_stress >= 4 AND energy_drain >= 4",
+          "description": "Hari ini terasa berat di pikiran dan badan sekaligus.",
+          "validation": "Wajar kalau hari ini terasa melelahkan."
+        },
+        "tegang_mental": {
+          "if": "mental_stress >= 4 AND energy_drain <= 3",
+          "description": "Badanmu masih punya tenaga, tapi pikiranmu terasa tegang hari ini.",
+          "validation": "Wajar kalau pikiran terasa penuh."
+        },
+        "lelah_fisik": {
+          "if": "mental_stress <= 3 AND energy_drain >= 4",
+          "description": "Badanmu lagi lelah, sementara pikiranmu relatif tenang.",
+          "extra_if_sleep_lt5": "Semalam kamu tidur kurang dari 5 jam. Coba tidur lebih awal malam ini dan minum air yang cukup.",
+          "validation": "Lelah itu wajar, badanmu sedang minta jeda."
+        },
+        "stabil": {
+          "if": "selain di atas",
+          "description": "Hari ini terasa cukup stabil.",
+          "validation": null
+        }
+      },
+      "exercise_by_category_when_mental_high": {
+        "workload": "ex_box_breathing",
+        "relasi_kerja": "ex_grounding",
+        "fisik_istirahat": "ex_screen_break",
+        "lainnya": "ex_mindful_breath"
+      },
+      "other_cases": "lelah_fisik = ex_screen_break, stabil = ex_mindful_breath. Jika kosong, pakai selection_rule di exercise_library_mock.",
+      "validation_rules": "Satu kalimat validasi tampil sebelum saran. Tanpa klaim ilmiah atau medis di UI. Tidak tampil di care_mode."
+    },
+    "trigger_category_mapping": {
+      "workload": [
+        "deadline_kerja",
+        "beban_numpuk",
+        "lembur",
+        "rapat_beruntun"
+      ],
+      "relasi_kerja": [
+        "atasan_rekan"
+      ],
+      "fisik_istirahat": [
+        "kurang_tidur",
+        "kelelahan_fisik"
+      ],
+      "lainnya": [
+        "overthinking",
+        "umum"
+      ]
+    },
+    "checkin_trigger_keys_rule": "Untuk check-in, trigger_keys = [key pertama dari kategori terpilih]. Jika kategori = workload, suggest_task_breaker = true."
+  },
+  "navigation": {
+    "pattern": "Bottom navigation tepat 3 tab: Home, Tulis, Tren. Tidak boleh menambah tab. Riwayat dan Pengaturan lewat ikon di pojok atas Home. Halaman lain dibuka lewat kartu atau tautan. Nav disembunyikan di Hasil, Care Mode, dan latihan.",
+    "desktop": "Konten maksimal 480px di tengah, bottom nav ikut dibatasi lebar yang sama.",
+    "hr": "Dasbor HRD tidak memakai bottom nav karyawan. Lihat features.F12_hr_dashboard.layout."
+  },
+  "safety_rules": [
+    "Jika crisis_flag = true: JANGAN tampilkan skor, indeks, latihan, tindak lanjut, atau apa pun bernada produktivitas. Tampilkan Care Mode. Keselamatan mengalahkan semua fitur.",
+    "Skor atau indeks tinggi BUKAN krisis. crisis_flag hanya dari sinyal eksplisit pada teks jurnal. Zona heavy hanya memunculkan kartu lembut: 'Kalau beban ini terus terasa, bicara dengan konselor atau orang yang kamu percaya bisa membantu.'",
+    "Check-in tanpa teks tidak bisa mendeteksi krisis. Sediakan tautan 'Butuh bicara dengan seseorang?' yang selalu terlihat (mis. di Home dan Hasil) dan membuka Care Mode.",
+    "Tidak ada tombol merah, kata 'kritis', 'kronis', atau 'fix burnout' di UI. Warna heavy hanya untuk pill label.",
+    "Latihan hanya langkah kecil untuk rileks atau menata pikiran. Tanpa janji hasil medis. Di halaman latihan dan ringkasan konselor tampilkan: 'Ini bukan pengganti bantuan profesional.'",
+    "Jangan menulis nomor telepon bantuan dari ingatan. Simpan di src/careContacts.ts dengan komentar 'TODO: verifikasi nomor resmi terbaru sebelum rilis'. Boleh tambahkan nomor yang sudah diverifikasi manusia, dengan penanda verified."
+  ],
+  "privacy": {
+    "principle": "Aura adalah alat refleksi pribadi. Isi jurnal dan catatan individu tidak pernah ditampilkan ke perusahaan, atasan, atau HR. Perusahaan hanya dapat melihat ringkasan agregat tanpa nama (F12), dan hanya dari pengguna yang memilih ikut.",
+    "ui_text": [
+      "Landing dan Settings: 'Catatanmu hanya untukmu. Perusahaan hanya bisa melihat ringkasan gabungan tanpa nama, dan hanya jika kamu memilih ikut.' CATATAN untuk tim: klaim ini hanya boleh tayang jika backend benar-benar memenuhinya (agregasi dan ambang minimal diberlakukan di server). Tulis catatan ini di README.",
+      "Settings: 'Teks jurnalmu diproses oleh layanan AI pihak ketiga untuk menghasilkan analisis.'",
+      "Settings: toggle 'Ikut ringkasan gabungan perusahaan' (default mati) dengan penjelasan satu kalimat: 'Hanya angka gabungan tanpa nama yang dihitung dari minimal 5 orang. Isi jurnalmu tidak pernah ikut.'"
+    ],
+    "data_control": "Unduh catatanku (PDF yang mudah dibaca; JSON sebagai opsi kedua) dan hapus semua data (dialog dua langkah, jelaskan tidak bisa dibatalkan, tombol batal jelas) ada di Settings (F9).",
+    "hr_aggregation": [
+      "Hanya pengguna yang menyalakan toggle ikut ringkasan yang masuk agregasi.",
+      "Angka agregat hanya ditampilkan jika dihitung dari minimal 5 orang berbeda.",
+      "Entri bertanda crisis_flag tidak pernah masuk agregasi.",
+      "Dasbor tidak pernah memuat nama, email, teks jurnal, atau data per orang."
+    ]
+  },
+  "copy_guidelines": [
+    "Tulis dari sudut pandang pengguna, kata sederhana, kalimat aktif. Tombol menyebut persis apa yang terjadi ('Simpan', 'Mulai', 'Coba lagi').",
+    "Nama aksi konsisten di seluruh alur.",
+    "Error: jelaskan apa yang terjadi dan apa yang bisa dilakukan, singkat dan ramah, tanpa kode mentah. Contoh: 'Ada kendala sebentar, coba lagi ya.' dengan tombol 'Coba lagi'.",
+    "Kosong: ajakan untuk bertindak. Contoh: 'Belum ada catatan. Mulai dari satu kalimat saja.'",
+    "Validasi input: pesan ramah, bukan merah keras. Contoh: 'Ceritanya agak panjang. Coba ringkas sedikit ya (maksimal 2000 karakter).'",
+    "Dilarang kalimat yang menekan: 'kamu belum check-in!', 'jangan putus', 'kamu harus'.",
+    "Pertanyaan pemantik jurnal: 'Hari kerjamu rasanya gimana?'"
+  ],
+  "global_states": {
+    "loading": "Skeleton yang meniru bentuk konten asli. Untuk submit jurnal/check-in pakai Companion 'thinking'. Jangan hanya spinner.",
+    "empty": "Setiap halaman yang bergantung data punya tampilan kosong yang dirancang dengan ajakan tindakan.",
+    "error": "Pesan singkat ramah dengan tombol coba lagi. Simpan lokal jika gagal mencatat sesi, jangan blokir pengguna."
+  },
+  "pages": [
+    {
+      "id": "login",
+      "tier": "P0",
+      "content": "Judul singkat spesifik, kolom email, tombol utama 'Masuk', tombol sekunder 'Lanjut dengan Google', tautan 'Coba sebagai pengguna baru' (data kosong) dan opsi data contoh 30 hari. Disclaimer: 'Aplikasi ini untuk refleksi diri, bukan pengganti bantuan profesional.' Login hanya simulasi (token palsu di localStorage). Tambahkan tautan kecil 'Masuk sebagai HRD'."
+    },
+    {
+      "id": "home",
+      "tier": "P0",
+      "note": "Paling dipoles",
+      "content": [
+        "Salam singkat sesuai waktu + tanggal.",
+        "Companion besar sesuai zona (neutral jika belum ada indeks), posisi kiri bersama angka.",
+        "Indeks burnout besar (tabular-nums) + pill zona.",
+        "Satu kalimat tren (mis. 'Bebanmu naik tiga hari terakhir').",
+        "Tombol utama 'Tulis jurnal hari ini', tombol sekunder 'Check-in cepat'.",
+        "Mini chart 7 hari (garis solid).",
+        "Ikon pojok: Riwayat, Pengaturan, Keluar.",
+        "Tautan 'Butuh bicara dengan seseorang?'."
+      ],
+      "states": [
+        "loading skeleton",
+        "kosong (user baru atau entri < 3)",
+        "error"
+      ]
+    },
+    {
+      "id": "write_journal",
+      "tier": "P0",
+      "content": [
+        "Pertanyaan 'Hari kerjamu rasanya gimana?'",
+        "Textarea besar auto-grow, penghitung karakter halus (maks 2000).",
+        "Tombol utama 'Check My Condition' nonaktif jika kosong.",
+        "Tautan kecil 'Terlalu capek menulis? Coba check-in cepat'.",
+        "Saat submit: layar loading Companion thinking."
+      ]
+    },
+    {
+      "id": "result",
+      "tier": "P0",
+      "note": "Momen wow",
+      "content": [
+        "Count-up indeks (atau 'Beban hari ini' jika indeks null) + Companion berubah ke zona.",
+        "Pill zona dan 'Beban hari ini x/10'.",
+        "Kalimat deskripsi + satu kalimat validasi.",
+        "Chip pemicu netral.",
+        "Kartu saran dengan fa-lightbulb.",
+        "Kartu 'Langkah kecil untukmu' (nama latihan, durasi, manfaat, tombol sekunder 'Mulai').",
+        "Kartu lembut konselor bila zona heavy.",
+        "Tombol utama 'Selesai' dan tautan 'Lihat tren'."
+      ],
+      "branch": "crisis_flag = true: langsung ke Care Mode tanpa skor."
+    },
+    {
+      "id": "trend",
+      "tier": "P0",
+      "content": [
+        "Segmented control 7 / 30 hari.",
+        "Line chart SVG: skor harian (tipis) dan indeks (tebal), garis solid, latar zona tint solid halus.",
+        "Ringkasan teks alternatif untuk chart.",
+        "Kartu 'Insight minggu ini' (satu paragraf dummy).",
+        "Peta pemicu (F4) di bawahnya jika tier P1 sudah dibangun."
+      ],
+      "states": [
+        "loading",
+        "kosong (kurang dari 3 hari)",
+        "error"
+      ]
+    },
+    {
+      "id": "care_mode",
+      "tier": "P0",
+      "content": [
+        "Kartu hangat tanpa skor dan tanpa merah keras.",
+        "Teks empatik mengajak bicara dengan orang tepercaya atau tenaga profesional.",
+        "Daftar kontak bantuan dari careContacts.ts.",
+        "Teks panduan: 'Layanan konseling karyawan (EAP) di perusahaanmu, jika ada.' tanpa nomor.",
+        "Tombol 'Hubungi orang terdekat' (F5) dan tombol sekunder 'Kembali'.",
+        "Companion statis."
+      ]
+    },
+    {
+      "id": "quick_checkin",
+      "tier": "P0",
+      "type": "bottom sheet",
+      "see": "features.F3_quick_checkin"
+    },
+    {
+      "id": "exercise_player",
+      "tier": "P0",
+      "see": "features.F1_micro_exercises",
+      "note": "Layar sebelum mulai, langkah dengan panduan visual, kontrol Sebelumnya/Jeda/Lanjut, dan penutup."
+    },
+    {
+      "id": "history",
+      "tier": "P1",
+      "content": "List per tanggal dengan titik zona dan cuplikan teks, ketuk untuk detail."
+    },
+    {
+      "id": "settings",
+      "tier": "P1",
+      "content": "Tampilan (terang, gelap, otomatis), Pengingat (F10), Orang tepercaya (F5), Jeda dan batas (F6), Unduh catatanku (F9), Hapus semua data, catatan privasi, logout. Toggle 'Ikut ringkasan gabungan perusahaan' (default mati)."
+    },
+    {
+      "id": "landing",
+      "tier": "P2",
+      "content": "Satu layar editorial: kalimat utama spesifik tentang beban kerja, 3 langkah (Tulis, Pahami, Langkah kecil), catatan privasi (lihat privacy.ui_text), disclaimer bukan diagnosis, tombol Mulai."
+    },
+    {
+      "id": "break_planner",
+      "tier": "P2",
+      "see": "features.F6_break_planner"
+    },
+    {
+      "id": "task_breaker",
+      "tier": "P2",
+      "see": "features.F7_task_breaker"
+    },
+    {
+      "id": "counselor_report",
+      "tier": "P2",
+      "see": "features.F8_counselor_report"
+    },
+    {
+      "id": "data_export",
+      "tier": "P1",
+      "see": "features.F9_privacy_controls",
+      "note": "Layar Unduh catatanku dengan pratinjau dokumen cetak."
+    },
+    {
+      "id": "hr_login",
+      "tier": "HR",
+      "see": "features.F12_hr_dashboard.login"
+    },
+    {
+      "id": "hr_dashboard",
+      "tier": "HR",
+      "see": "features.F12_hr_dashboard"
+    }
+  ],
+  "features": {
+    "tiers": {
+      "P0": "Login simulasi, Home, Tulis, Hasil, Tren, Care Mode, F3 Check-in cepat, F1 Latihan mikro dengan panduan visual, dan token CSS dua tema (terang dan gelap) sejak awal. Harus selesai dan rapi dulu.",
+      "P1": "F2 Tindak lanjut, F4 Peta pemicu, F9 Unduh dan hapus data (PDF), F10 Pengingat, F11 tombol tema, F5 Kontak tepercaya, History, Settings.",
+      "P2": "F6 Jeda dan batas, F7 Pemecah tugas, F8 Ringkasan konselor, Landing.",
+      "HR": "F12 Dasbor HRD agregat dan login HRD. Wajib untuk lomba, dibangun segera setelah P0 karyawan lolos definition_of_done."
+    },
+    "F1_micro_exercises": {
+      "tier": "P0",
+      "purpose": "Setelah hasil, pengguna mendapat satu latihan singkat yang cocok dengan pemicunya, dipandu langkah demi langkah dengan visual yang jelas seperti aplikasi latihan di rumah. Tanpa visual pengguna bingung harus ngapain.",
+      "player_screens": {
+        "sebelum_mulai": "Judul latihan, durasi perkiraan, satu kalimat apa yang akan terjadi, tips singkat ('Cari posisi nyaman. Kamu bisa berhenti kapan saja.'), pratinjau visual kecil, tombol utama 'Mulai'. Catatan: 'Ini bukan pengganti bantuan profesional.'",
+        "langkah": "Bar atas: tombol keluar (fa-xmark, aria-label 'Keluar'), label 'Langkah x dari n', bar progres tipis. Area visual sesuai jenis langkah. Instruksi h1. Teks bantu caption. Kontrol bawah.",
+        "penutup": "Rata tengah (satu-satunya tempat yang boleh): Companion neutral tenang, 'Selesai. Terima kasih sudah meluangkan waktu.', tombol utama 'Selesai'. Catatan bukan pengganti bantuan profesional."
+      },
+      "controls": {
+        "layout": "Baris bawah: [Sebelumnya] [Jeda] [Lanjut]. Hanya satu tombol utama (Lanjut). Sebelumnya dan Jeda sekunder.",
+        "sebelumnya": "fa-arrow-left + teks 'Sebelumnya'. Nonaktif di langkah 1.",
+        "jeda": "Hanya muncul di langkah bertimer atau panduan napas. Berubah menjadi 'Lanjutkan' saat dijeda.",
+        "lanjut": "Di langkah terakhir menjadi 'Selesai'. Tidak pernah lompat otomatis ke langkah berikutnya.",
+        "keluar": "Lewat fa-xmark. Dialog kecil: 'Berhenti sekarang? Tidak apa-apa, kamu bisa mulai lagi kapan saja.' Tombol utama 'Lanjutkan latihan', sekunder 'Berhenti'.",
+        "keyboard": "Panah kiri = Sebelumnya, panah kanan = Lanjut, spasi = Jeda atau Lanjutkan."
+      },
+      "back_navigation_rules": [
+        "Salah pencet Lanjut selalu bisa dibatalkan dengan Sebelumnya, tanpa kehilangan progres.",
+        "Teks yang sudah ditulis di langkah 'write' dipertahankan selama sesi latihan masih terbuka.",
+        "Langkah bertimer yang dikunjungi ulang mulai dari awal.",
+        "Debounce 300 ms pada tombol agar ketukan ganda tidak melompati langkah.",
+        "Menekan Lanjut sebelum timer habis diperbolehkan, tanpa konfirmasi (bukan paksaan menunggu)."
+      ],
+      "step_kinds": {
+        "text": "Instruksi h1, pose Companion opsional.",
+        "breath": "Panduan napas: lingkaran (garis ink 2px, isian surface) membesar saat fase 'up', diam saat 'hold', mengecil saat 'down'. Teks fase besar di dalam atau di bawah lingkaran ('Tarik napas', 'Tahan', 'Embuskan'), angka hitung mundur tabular-nums, caption 'Putaran 2 dari 5'. Data: phases [{label, sec, scale}] dan rounds. Timer berbasis timestamp (performance.now), bukan akumulasi setInterval, agar tidak melenceng, dan berhenti saat dijeda atau tab tersembunyi. Setelah semua putaran selesai, tombol Lanjut tetap utama, tanpa auto-advance.",
+        "tap_count": "Deretan N titik outline (target sentuh minimal 44px). Setiap ketukan mengisi satu titik (solid ink). Dipakai untuk 5-4-3-2-1 dan menghitung napas. Opsional loop dan seconds. Boleh navigator.vibrate(10) bila tersedia.",
+        "pose": "Companion berlengan membawakan pose atau urutan pose (sequence [{pose, sec}]) dengan label teks arah yang jelas ('Miringkan kepala pelan ke kiri') dan caption 'Rasakan regangan, jangan dipaksa. Berhenti kalau sakit.'",
+        "timer": "Hitung mundur besar tabular-nums dengan Companion neutral.",
+        "write": "Textarea auto-grow dengan placeholder dan catatan 'Tulisan ini tidak disimpan.' Isi hanya ada di state memori selama latihan, tidak masuk riwayat, ekspor, localStorage, atau backend."
+      },
+      "pose_rig": {
+        "note": "Companion menerima prop pose dan merender dua lengan dari garis solid 3px. Hanya transform (rotate dan translate). Wajah tetap.",
+        "poses": [
+          "sit",
+          "stand",
+          "neck_left",
+          "neck_right",
+          "arms_up",
+          "hands_chest"
+        ],
+        "fallback": "Jika rig pose belum selesai, tampilkan Companion biasa dengan label teks arah. Jangan hapus label teks."
+      },
+      "build_order": [
+        "1. text, timer, breath, tap_count (melayani 6 dari 9 latihan)",
+        "2. write",
+        "3. pose rig (jika waktu ada)"
+      ],
+      "flow": [
+        "Result menerima recommended_exercise_id. Jika kosong pakai selection_rule.",
+        "Mulai membuka layar sebelum_mulai, lalu langkah, lalu penutup.",
+        "Catat sesi lewat service layer (completed true saat Selesai, false jika Berhenti, tanpa menyalahkan). Jika gagal, simpan lokal dan coba lagi nanti."
+      ],
+      "safety": [
+        "Latihan napas: 'Kalau terasa pusing, kembali bernapas seperti biasa.'",
+        "Latihan regang: 'Berhenti kalau terasa sakit.'",
+        "Tanpa janji hasil medis."
+      ],
+      "states": [
+        "loading",
+        "error saat mencatat sesi (jangan blokir pengguna)"
+      ]
+    },
+    "F2_followup": {
+      "purpose": "Mengecek apakah latihan kemarin terasa membantu dengan satu ketukan.",
+      "component": "FollowUpCard: skala 1-5 berlabel (1 'Belum terasa', 3 'Lumayan', 5 'Sangat terbantu') dan 'Lewati' yang setara menonjol.",
+      "integration": "Home, di atas tombol utama, hanya jika getPendingFollowup() mengembalikan item. Maksimal sekali per hari. Setelah menjawab: terima kasih singkat lalu kartu hilang halus.",
+      "question": "Kemarin kamu mencoba [nama latihan]. Terasa membantu?"
+    },
+    "F3_quick_checkin": {
+      "purpose": "Versi super ringan jurnal untuk hari saat terlalu lelah menulis. Hanya ketukan.",
+      "questions": [
+        "1. Kondisi pikiran (stres mental), 5 chip berlabel: 1 Tenang, 2 Cukup ringan, 3 Lumayan tegang, 4 Berat, 5 Sangat berat.",
+        "2. Kondisi badan (energi), 5 chip berlabel: 1 Segar, 2 Cukup, 3 Biasa saja, 4 Lelah, 5 Habis.",
+        "3. Jam tidur semalam: Kurang dari 5 jam | 5-6 jam | 7-8 jam | Lebih dari 8 jam.",
+        "4. Pemicu utama hari ini (pilih satu): Beban dan deadline kerja (fa-list-check) | Atasan atau rekan kerja (fa-user-group) | Fisik dan istirahat (fa-moon) | Di luar kerja atau lainnya (fa-house)."
+      ],
+      "why_two_scales": "Memisahkan stres mental dari energi fisik agar lelah biasa tidak dibaca sebagai burnout.",
+      "integration": "Home: tombol sekunder dekat tombol utama. Tulis: tautan kecil. Hasil memakai ulang layar Result. Entri masuk riwayat dan tren.",
+      "validation": "Semua pertanyaan wajib dijawab. Tombol kirim nonaktif sampai lengkap."
+    },
+    "F4_trigger_map": {
+      "purpose": "Menunjukkan pemicu yang paling sering muncul bersamaan dengan beban tinggi.",
+      "component": "TriggerMapCard: bar horizontal solid ink per trigger_category dengan persen DAN jumlah (n), dan satu kalimat ringkas.",
+      "rules": "Bahasa 'sering muncul bersamaan dengan', bukan 'menyebabkan'. Kosong jika entri < 5. Mengikuti segmented 7/30 hari. Tampilkan n agar persen dari data sedikit tidak menyesatkan."
+    },
+    "F5_trusted_contact": {
+      "purpose": "Menyimpan satu orang tepercaya sebagai jalan pintas di Care Mode.",
+      "component": "TrustedContactForm di Settings: nama, hubungan (Teman, Keluarga, Pasangan, Rekan kerja tepercaya, Mentor, Lainnya), nomor WhatsApp.",
+      "rules": [
+        "Nomor disimpan sebagai data pengguna, bukan di kode. Validasi format sederhana.",
+        "Tombol 'Kirim pesan ke [nama]' membuka wa.me di tab baru dengan teks ter-encode: 'Hai, aku lagi merasa berat hari ini. Boleh ngobrol sebentar?' Pengguna menekan kirim sendiri.",
+        "Jika belum ada kontak, tombol mengarah ke Settings dengan ajakan lembut.",
+        "Catatan: 'Hanya kamu yang bisa melihat kontak ini.'"
+      ]
+    },
+    "F6_break_planner": {
+      "purpose": "Menentukan jam selesai kerja dan ritual penutup agar pikiran bisa lepas dari pekerjaan.",
+      "components": "Halaman: jam selesai kerja, 1-3 ritual (Tutup laptop, Catat sisa tugas untuk besok, Matikan notifikasi chat kantor, Jalan kaki 10 menit, Mandi atau cuci muka, Dengar musik, Ngobrol dengan teman), toggle pengingat. BreakReminderBanner di Home.",
+      "rules": "Pilihan jam selesai kerja dan ritual menjadi sumber untuk pengingat 'menutup hari kerja' di F10. Pengingat dikirim lewat saluran F10, bukan lagi hanya saat aplikasi dibuka. Teks ajakan: 'Sudah jam 18.00. Waktunya mulai menutup hari kerja?'"
+    },
+    "F7_task_breaker": {
+      "purpose": "Memecah satu tugas kerja besar menjadi 3-5 langkah 10-25 menit.",
+      "components": "Halaman: input satu kalimat, tombol 'Pecah jadi langkah kecil', daftar langkah dengan menit dan checkbox (status lokal), tombol 'Mulai fokus 15 menit' (timer sederhana, boleh pakai ulang timer latihan).",
+      "integration": "Result: tautan 'Pecah tugasmu jadi langkah kecil' di kartu Langkah kecil jika suggest_task_breaker = true."
+    },
+    "F8_counselor_report": {
+      "purpose": "Satu halaman ringkas yang bisa dibagikan pengguna ke psikolog, konselor, atau layanan konseling karyawan pilihannya.",
+      "components": "Halaman memakai komponen dokumen cetak bersama (printable_documents) dengan mode 'konselor'. Pilihan bagian (checkbox), pratinjau, dan tombol 'Simpan sebagai PDF'.",
+      "content": {
+        "frekuensi": "Jumlah entri dan jumlah hari beban tinggi (skor >= 7) pada rentang terpilih, tampilkan n.",
+        "pola_waktu": "Sebaran per hari dalam seminggu dan jam kerja vs setelah jam kerja dari created_at.",
+        "kategori_dominan": "Persen per trigger_category dengan jumlah entri.",
+        "latihan_membantu": "Latihan dengan rating tinggi.",
+        "default_checked": [
+          "tren",
+          "pemicu",
+          "pola_waktu"
+        ]
+      },
+      "rules": [
+        "JANGAN menyertakan teks jurnal asli kecuali dicentang eksplisit.",
+        "Tidak dikirim otomatis ke siapa pun. Tidak ada tombol 'kirim ke atasan atau HR'.",
+        "Catatan: 'Ringkasan ini bukan diagnosis. Hanya gambaran pola dari catatanmu sendiri.'"
+      ],
+      "integration": "Tautan 'Bagikan ringkasan ke psikolog atau konselor' di Tren dan Settings, dan kartu lembut di Hasil saat zona heavy."
+    },
+    "F9_privacy_controls": {
+      "tier": "P1",
+      "name": "Unduh catatanku dan hapus data",
+      "purpose": "Kendali penuh atas data dengan format yang bisa dipahami orang awam, bukan JSON mentah.",
+      "download_screen": {
+        "title": "Unduh catatanku",
+        "intro": "Simpan salinan catatanmu sebagai PDF yang mudah dibaca.",
+        "options": [
+          "Rentang: 30 hari (default), 90 hari, atau Semua",
+          "[x] Ringkasan dan tren",
+          "[x] Daftar catatan per tanggal (tanggal, beban hari ini, pemicu)",
+          "[ ] Teks jurnal lengkap, dengan peringatan: 'Berisi cerita pribadimu. Simpan di tempat yang aman.'"
+        ],
+        "preview": "Pratinjau dokumen di layar sebelum dicetak.",
+        "primary_button": "Simpan sebagai PDF",
+        "hint": "Di jendela cetak, pilih 'Simpan sebagai PDF'.",
+        "secondary_link": "Unduh data mentah (JSON, untuk dipindahkan ke aplikasi lain). Tautan kecil di bawah, dengan penjelasan satu kalimat.",
+        "document_mode": "data_saya"
+      },
+      "delete": "Tombol 'Hapus semua data saya' dengan dialog dua langkah: jelaskan bahwa tindakan tidak bisa dibatalkan, tombol batal jelas.",
+      "privacy_notes": [
+        "Catatan: 'Teks jurnalmu diproses oleh layanan AI pihak ketiga untuk menghasilkan analisis.'",
+        "JSON dipertahankan karena hak atas salinan data pribadi umumnya mensyaratkan format yang lazim atau dapat dibaca mesin. Verifikasi ke ketentuan UU PDP atau ahli hukum sebelum rilis."
+      ],
+      "crisis_entries": "Entri bertanda crisis_flag tidak dicantumkan di PDF. JSON tetap lengkap."
+    },
+    "extra_rules": [
+      "Dilarang streak, lencana, poin, papan peringkat, dan teks yang membuat pengguna merasa bersalah.",
+      "Semua pengingat lembut dan bisa dimatikan.",
+      "Setiap kartu baru punya tujuan jelas.",
+      "Semua alur bertahap punya cara kembali dan tidak ada data hilang diam-diam (lihat interaction_rules)."
+    ],
+    "F10_reminders": {
+      "tier": "P1",
+      "name": "Pengingat lembut",
+      "purpose": "Mengingatkan pengguna di waktu yang ia pilih, tanpa menekan, dengan jujur soal batas teknis frontend-only.",
+      "reality_check": "Frontend tanpa backend tidak bisa menjadwalkan notifikasi yang andal saat aplikasi tertutup. Browser tidak menyediakan penjadwalan lokal yang bisa diandalkan. Karena itu pengingat dibuat berlapis.",
+      "layers": [
+        {
+          "id": "L1",
+          "name": "Banner dalam aplikasi",
+          "works": "Saat aplikasi dibuka. Tidak butuh izin.",
+          "note": "BreakReminderBanner F6, dengan tombol Tutup dan 'Matikan pengingat ini'."
+        },
+        {
+          "id": "L2",
+          "name": "Notifikasi browser",
+          "works": "Saat aplikasi terbuka di tab atau terpasang di layar utama (PWA).",
+          "how": "Setelah pengguna menyalakan toggle, jelaskan dulu lalu minta izin (Notification.requestPermission). Tampilkan lewat ServiceWorkerRegistration.showNotification (wajib di Android), fallback new Notification. Pemeriksaan jadwal tiap 30 detik saat aplikasi aktif dan saat visibilitychange. Jika pengguna baru membuka aplikasi dan waktunya terlewat lebih dari 60 menit, tampilkan banner, bukan notifikasi.",
+          "ios": "Notifikasi web di iPhone butuh aplikasi ditambahkan ke Layar Utama (iOS 16.4 ke atas). Verifikasi sebelum rilis.",
+          "if_denied": "Pesan netral, tawarkan L3."
+        },
+        {
+          "id": "L3",
+          "name": "Kalender (.ics)",
+          "works": "Saat aplikasi tertutup. Paling andal tanpa backend.",
+          "how": "Tombol 'Tambahkan ke kalender' membuat file .ics di sisi klien tanpa library: VEVENT berulang (RRULE:FREQ=WEEKLY;BYDAY=...) dengan waktu lokal mengambang dan VALARM tampil saat waktunya.",
+          "privacy": "Judul event bisa diedit pengguna, default netral 'Waktunya menutup hari kerja'. Peringatkan: 'Kalau kamu memakai kalender kantor, pilih judul yang netral.'"
+        },
+        {
+          "id": "L4",
+          "name": "Web Push dari server",
+          "works": "Saat aplikasi tertutup, tanpa kalender.",
+          "status": "Pasca-MVP. Butuh backend (VAPID) dan service worker push."
+        }
+      ],
+      "reminder_types": [
+        {
+          "id": "close_day",
+          "label": "Menutup hari kerja",
+          "time_source": "features.F6 end_time, default 18:00",
+          "body": "Sudah jam {HH.mm}. Waktunya mulai menutup hari kerja?"
+        },
+        {
+          "id": "daily_note",
+          "label": "Catatan harian",
+          "time_source": "dipilih pengguna",
+          "body": "Kalau sempat, catat hari kerjamu. Check-in cepat cuma 30 detik."
+        }
+      ],
+      "rules": [
+        "Semua pengingat default MATI (opt-in).",
+        "Hari default Senin sampai Jumat, bisa diubah dengan chip hari.",
+        "Maksimal satu notifikasi per jenis per hari, tanpa notifikasi susulan.",
+        "Lewati pengingat jika pengguna sudah mencatat hari ini (hanya berlaku untuk L1 dan L2).",
+        "Teks notifikasi tidak boleh memuat skor, zona, indeks, kata burnout, stres, atau isi jurnal (teks bisa terbaca di layar kunci).",
+        "Dilarang kalimat menekan: 'kamu belum check-in', 'jangan lupa', 'segera'.",
+        "Mengetuk notifikasi membuka Home (close_day boleh membuka kartu ritual).",
+        "Tombol 'Tes pengingat' di Settings menampilkan satu notifikasi contoh sekarang, untuk demo dan uji izin.",
+        "Pengingat tidak pernah dipicu oleh hasil jurnal atau zona heavy."
+      ],
+      "settings_ui": "Settings > Pengingat: dua toggle, jam, chip hari, tombol 'Tambahkan ke kalender', 'Tes pengingat', dan caption batas teknis: 'Pengingat lewat browser hanya muncul saat Aura terbuka atau terpasang di layar utama. Untuk pengingat yang selalu muncul, tambahkan ke kalender.'",
+      "data": "Konfigurasi disimpan lewat service layer (GET dan PUT /api/reminders). Mock memakai localStorage."
+    },
+    "F11_theme": {
+      "tier": "Token dua tema: P0. Tombol pilihan: P1.",
+      "purpose": "Nyaman dilihat saat malam atau mata lelah.",
+      "see": "design_system.theme dan design_system.colors.dark_mode"
+    },
+    "F12_hr_dashboard": {
+      "tier": "Wajib untuk lomba (penguji harus melihatnya). Dibangun setelah P0 karyawan selesai.",
+      "name": "Dasbor HRD (agregat)",
+      "purpose": "Menunjukkan gambaran besar beban kerja tim kepada HRD tanpa mengungkap individu, sebagai sisi B2B Aura.",
+      "login": {
+        "page": "hr_login",
+        "access": "Tautan kecil 'Masuk sebagai HRD' di halaman login karyawan, dan rute langsung /hrd.",
+        "form": {
+          "title": "Masuk sebagai HRD",
+          "fields": [
+            "Email kerja",
+            "Kata sandi"
+          ],
+          "primary_button": "Masuk",
+          "secondary_link": "Kembali ke login karyawan",
+          "note": "Halaman ini hanya menampilkan ringkasan gabungan tanpa nama. Tidak ada catatan individu.",
+          "validation": "Email harus berformat benar dan kata sandi tidak kosong. Pesan ramah, bukan merah keras. Jika gagal: 'Email atau kata sandi belum sesuai. Coba lagi ya.'"
+        },
+        "simulation": "Login hanya simulasi, input valid apa pun diterima. Simpan token palsu bernilai role 'hrd' di localStorage (aura_hr_token).",
+        "role_guard": "Pengguna role hrd hanya bisa membuka dasbor dan tidak bisa membuka halaman karyawan. Pengguna karyawan tidak bisa membuka /hrd."
+      },
+      "layout": {
+        "navigation": "Tanpa bottom nav karyawan. Header sederhana: wordmark Aura, label 'HRD', ikon tema, dan tombol keluar.",
+        "arrangement": "Desktop: banner privasi, filter divisi, grafik tren lebar penuh, lalu dua kolom (heatmap dan pemicu), lalu rekomendasi. Mobile: satu kolom bertumpuk. Bukan grid kartu identik: tiap bagian punya ukuran dan tujuan berbeda.",
+        "tokens": "Memakai token, komponen, dan dua tema yang sama dengan aplikasi karyawan."
+      },
+      "banner": {
+        "position": "Paling atas dasbor, selalu terlihat, tidak bisa ditutup.",
+        "text": "Seluruh data yang ditampilkan bersifat agregat dan tanpa nama. Dasbor ini tidak menampilkan identitas atau catatan individu, dan angka hanya muncul jika berasal dari minimal 5 orang.",
+        "style": "Kartu tipis berborder 1px, tanpa warna mencolok.",
+        "note": "Teks sengaja berbeda dari rancangan awal ('tidak merekam atau melacak identitas') karena klaim itu tidak benar jika pengguna punya akun dan divisi. Jangan menampilkan klaim yang tidak bisa dipenuhi backend."
+      },
+      "sections": [
+        {
+          "id": "filter_divisi",
+          "title": "Divisi",
+          "content": "Dropdown divisi (Semua divisi, Marketing, IT, Sales, Operasional, 'Divisi lain (digabung)'). Filter memengaruhi semua bagian di bawahnya. Divisi dengan kurang dari 5 kontributor digabung ke 'Divisi lain (digabung)'. Jika gabungan pun kurang dari 5, bagian itu menampilkan 'Data belum cukup untuk ditampilkan (minimal 5 orang).'"
+        },
+        {
+          "id": "tren_indeks",
+          "title": "Tren indeks burnout",
+          "content": "Grafik garis solid per bulan untuk 12 bulan terakhir, pita zona tint solid halus dan legenda teks Tenang, Waspada, Butuh istirahat. Satu kalimat ringkas, mis. 'Indeks tertinggi pada bulan Desember.' Ringkasan teks alternatif untuk chart."
+        },
+        {
+          "id": "heatmap_hari",
+          "title": "Hari yang paling sering berat",
+          "content": "Kalender sederhana 4 minggu terakhir x 7 hari. Nilai tiap sel adalah persen catatan dengan beban tinggi (skor 7 ke atas). Intensitas 4 tingkat dengan warna solid netral berbasis ink (bukan warna zona, tanpa gradasi), dan angka persen tertulis di sel. Sel dengan kurang dari 5 kontributor kosong dan berlabel 'Data belum cukup'. Satu kalimat di atasnya, mis. 'Hari yang paling sering berat: Kamis.'"
+        },
+        {
+          "id": "pemicu_utama",
+          "title": "Pemicu utama",
+          "content": "Diagram lingkaran (pie atau donut) per kategori pemicu: Beban dan deadline kerja, Atasan atau rekan kerja, Fisik dan istirahat, Di luar kerja atau lainnya. Irisan memakai solid netral berbasis ink (bukan warna zona, tanpa gradasi), dengan legenda berisi label, persen, dan jumlah. Bahasa 'sering muncul bersamaan dengan', bukan sebab-akibat."
+        },
+        {
+          "id": "rekomendasi",
+          "title": "Saran untuk HRD",
+          "content": "Maksimal 3 saran otomatis dari aturan if-else berdasarkan divisi, hari dengan beban tertinggi, dan pemicu terbanyak. Kartu biasa dengan ikon fa-lightbulb.",
+          "templates": {
+            "workload": "Divisi {divisi} sering mencatat beban tinggi pada hari {hari}, dengan pemicu terbanyak beban dan deadline kerja. Pertimbangkan meninjau jadwal rapat dan tenggat pada hari itu.",
+            "relasi_kerja": "Pada divisi {divisi}, pemicu terbanyak adalah hubungan dengan atasan atau rekan kerja. Pertimbangkan sesi umpan balik tim atau ruang bicara dengan fasilitator netral.",
+            "fisik_istirahat": "Pada divisi {divisi}, pemicu terbanyak terkait fisik dan istirahat. Pertimbangkan meninjau beban lembur dan waktu jeda tim.",
+            "lainnya": "Pada divisi {divisi}, pemicu terbanyak berasal dari luar pekerjaan. Pertimbangkan mengingatkan tim tentang layanan konseling karyawan jika tersedia."
+          },
+          "rules": "Bahasa saran, bukan vonis. Tanpa menilai kinerja tim atau menyalahkan manajer. Tampilkan hanya jika ambang 5 orang terpenuhi."
+        }
+      ],
+      "privacy_rules": [
+        "Lihat privacy.hr_aggregation. Semua aturan ambang, opt-in, dan pengecualian crisis_flag berlaku."
+      ],
+      "copy": "Teks dasbor HRD memakai 'Anda' yang sopan dan ringkas (pengecualian dari aturan 'kamu' untuk aplikasi karyawan). Tetap tanpa jargon dan tanpa kalimat diagnosis.",
+      "states": [
+        "loading skeleton yang meniru bentuk grafik",
+        "kosong: 'Belum cukup data. Angka muncul setelah minimal 5 orang berkontribusi.'",
+        "error: 'Ada kendala sebentar, coba lagi ya.' dengan tombol coba lagi"
+      ],
+      "mock": "Data mock sudah berupa agregat (tanpa data per orang). Lihat mock_data_requirements."
+    }
+  },
+  "exercise_library_mock": {
+    "note": "Mock untuk GET /api/exercises. Teks netral, tanpa klaim medis. Visual tiap langkah ditentukan oleh field 'kind' pada steps.",
+    "trigger_keys": [
+      {
+        "key": "deadline_kerja",
+        "label": "Deadline kerja"
+      },
+      {
+        "key": "beban_numpuk",
+        "label": "Beban kerja numpuk"
+      },
+      {
+        "key": "atasan_rekan",
+        "label": "Atasan atau rekan kerja"
+      },
+      {
+        "key": "rapat_beruntun",
+        "label": "Rapat beruntun"
+      },
+      {
+        "key": "lembur",
+        "label": "Lembur"
+      },
+      {
+        "key": "kurang_tidur",
+        "label": "Kurang tidur"
+      },
+      {
+        "key": "overthinking",
+        "label": "Overthinking"
+      },
+      {
+        "key": "kelelahan_fisik",
+        "label": "Kelelahan fisik"
+      },
+      {
+        "key": "umum",
+        "label": "Umum"
+      }
+    ],
+    "exercises": [
+      {
+        "id": "ex_box_breathing",
+        "title": "Napas kotak",
+        "duration_min": 3,
+        "suits": [
+          "deadline_kerja",
+          "overthinking",
+          "umum"
+        ],
+        "benefit": "Membantu tubuh melambat saat pikiran terasa penuh.",
+        "steps": [
+          {
+            "kind": "pose",
+            "pose": "sit",
+            "text": "Duduk nyaman dan lepaskan bahu."
+          },
+          {
+            "kind": "breath",
+            "text": "Ikuti lingkaran. Tarik napas lewat hidung, tahan, lalu embuskan pelan lewat mulut.",
+            "phases": [
+              {
+                "label": "Tarik napas",
+                "sec": 4,
+                "scale": "up"
+              },
+              {
+                "label": "Tahan",
+                "sec": 4,
+                "scale": "hold"
+              },
+              {
+                "label": "Embuskan",
+                "sec": 4,
+                "scale": "down"
+              },
+              {
+                "label": "Tahan",
+                "sec": 4,
+                "scale": "hold"
+              }
+            ],
+            "rounds": 5
+          },
+          {
+            "kind": "text",
+            "pose": "sit",
+            "text": "Kembali bernapas seperti biasa. Perhatikan bagaimana badanmu terasa sekarang."
+          }
+        ]
+      },
+      {
+        "id": "ex_grounding",
+        "title": "Kembali ke saat ini (5-4-3-2-1)",
+        "duration_min": 4,
+        "suits": [
+          "overthinking",
+          "atasan_rekan",
+          "umum"
+        ],
+        "benefit": "Mengalihkan perhatian dari pikiran yang berputar ke apa yang ada di sekitarmu.",
+        "steps": [
+          {
+            "kind": "tap_count",
+            "max": 5,
+            "icon": "fa-eye",
+            "text": "Sebutkan pelan-pelan 5 hal yang kamu lihat.",
+            "hint": "Ketuk satu titik setiap kali kamu menyebut satu hal."
+          },
+          {
+            "kind": "tap_count",
+            "max": 4,
+            "icon": "fa-hand",
+            "text": "Sebutkan 4 hal yang bisa kamu sentuh."
+          },
+          {
+            "kind": "tap_count",
+            "max": 3,
+            "icon": "fa-ear-listen",
+            "text": "Sebutkan 3 hal yang kamu dengar."
+          },
+          {
+            "kind": "tap_count",
+            "max": 2,
+            "text": "Sebutkan 2 hal yang bisa kamu cium."
+          },
+          {
+            "kind": "tap_count",
+            "max": 1,
+            "text": "Sebutkan 1 hal yang bisa kamu rasakan di mulut, lalu tarik napas dalam sekali."
+          }
+        ]
+      },
+      {
+        "id": "ex_reframe",
+        "title": "Lihat pikiranmu dari sisi lain",
+        "duration_min": 6,
+        "suits": [
+          "overthinking",
+          "atasan_rekan",
+          "deadline_kerja"
+        ],
+        "benefit": "Membantu menimbang pikiran yang terasa terlalu keras pada dirimu sendiri.",
+        "steps": [
+          {
+            "kind": "write",
+            "text": "Tulis satu pikiran yang paling mengganggu sekarang.",
+            "placeholder": "Contoh: aku pasti mengecewakan tim"
+          },
+          {
+            "kind": "write",
+            "text": "Tulis apa yang membuat pikiran itu terasa benar."
+          },
+          {
+            "kind": "write",
+            "text": "Tulis apa yang membuatnya mungkin tidak sepenuhnya benar."
+          },
+          {
+            "kind": "write",
+            "text": "Tulis versi yang lebih seimbang, seperti yang akan kamu katakan ke rekan yang mengalami hal sama."
+          }
+        ]
+      },
+      {
+        "id": "ex_one_priority",
+        "title": "Pilih satu prioritas hari ini",
+        "duration_min": 5,
+        "suits": [
+          "beban_numpuk",
+          "deadline_kerja",
+          "lembur"
+        ],
+        "benefit": "Mengurangi rasa kewalahan dengan memilih satu hal saja untuk sekarang.",
+        "steps": [
+          {
+            "kind": "write",
+            "text": "Tulis semua pekerjaan yang sedang menunggu, tanpa diurutkan."
+          },
+          {
+            "kind": "write",
+            "text": "Tulis satu hal yang paling dekat tenggatnya atau paling berdampak."
+          },
+          {
+            "kind": "write",
+            "text": "Tulis langkah pertama yang bisa selesai dalam 15 menit."
+          },
+          {
+            "kind": "text",
+            "text": "Yang tidak muat hari ini, catat untuk dijadwalkan ulang atau dibicarakan dengan atasan."
+          }
+        ]
+      },
+      {
+        "id": "ex_between_meetings",
+        "title": "Jeda 2 menit antar rapat",
+        "duration_min": 2,
+        "suits": [
+          "rapat_beruntun",
+          "atasan_rekan"
+        ],
+        "benefit": "Memberi ruang bernapas di antara rapat yang berurutan.",
+        "steps": [
+          {
+            "kind": "pose",
+            "sequence": [
+              {
+                "pose": "arms_up",
+                "sec": 10
+              },
+              {
+                "pose": "neck_left",
+                "sec": 5
+              },
+              {
+                "pose": "neck_right",
+                "sec": 5
+              }
+            ],
+            "text": "Berdiri dan regangkan bahu serta leher."
+          },
+          {
+            "kind": "breath",
+            "text": "Tarik tiga napas dalam dan pelan.",
+            "phases": [
+              {
+                "label": "Tarik napas",
+                "sec": 4,
+                "scale": "up"
+              },
+              {
+                "label": "Embuskan",
+                "sec": 6,
+                "scale": "down"
+              }
+            ],
+            "rounds": 3
+          },
+          {
+            "kind": "write",
+            "text": "Tulis satu hal terpenting yang perlu kamu capai di rapat berikutnya."
+          }
+        ]
+      },
+      {
+        "id": "ex_screen_break",
+        "title": "Jeda 10 menit tanpa layar",
+        "duration_min": 10,
+        "suits": [
+          "kelelahan_fisik",
+          "kurang_tidur",
+          "rapat_beruntun",
+          "umum"
+        ],
+        "benefit": "Memberi mata dan kepala waktu istirahat yang nyata.",
+        "steps": [
+          {
+            "kind": "pose",
+            "pose": "stand",
+            "text": "Jauhkan diri dari meja kerja dan letakkan ponsel."
+          },
+          {
+            "kind": "pose",
+            "sequence": [
+              {
+                "pose": "neck_left",
+                "sec": 10
+              },
+              {
+                "pose": "neck_right",
+                "sec": 10
+              },
+              {
+                "pose": "arms_up",
+                "sec": 10
+              }
+            ],
+            "text": "Berdiri, regangkan leher dan bahu pelan-pelan."
+          },
+          {
+            "kind": "text",
+            "pose": "stand",
+            "text": "Minum segelas air."
+          },
+          {
+            "kind": "timer",
+            "seconds": 120,
+            "text": "Lihat keluar jendela atau ke titik jauh selama beberapa menit."
+          }
+        ]
+      },
+      {
+        "id": "ex_brain_dump",
+        "title": "Tuang isi kepala",
+        "duration_min": 5,
+        "suits": [
+          "overthinking",
+          "beban_numpuk",
+          "kurang_tidur"
+        ],
+        "benefit": "Memindahkan pikiran ke kertas supaya kepala terasa lebih ringan.",
+        "steps": [
+          {
+            "kind": "text",
+            "text": "Siapkan kertas atau catatan kosong."
+          },
+          {
+            "kind": "write",
+            "seconds": 180,
+            "text": "Tulis semua yang berputar di kepala selama 3 menit, tanpa menyaring."
+          },
+          {
+            "kind": "write",
+            "text": "Tandai yang bisa dikerjakan besok."
+          },
+          {
+            "kind": "text",
+            "pose": "sit",
+            "text": "Tutup catatannya dan katakan pada diri sendiri: 'Sudah tercatat, besok kulanjutkan.'"
+          }
+        ]
+      },
+      {
+        "id": "ex_mindful_breath",
+        "title": "Tiga menit memperhatikan napas",
+        "duration_min": 3,
+        "suits": [
+          "umum",
+          "kurang_tidur",
+          "atasan_rekan",
+          "rapat_beruntun"
+        ],
+        "benefit": "Latihan sederhana untuk memperhatikan saat ini tanpa menilai.",
+        "steps": [
+          {
+            "kind": "pose",
+            "pose": "sit",
+            "text": "Pejamkan mata atau turunkan pandangan."
+          },
+          {
+            "kind": "tap_count",
+            "max": 10,
+            "loop": true,
+            "seconds": 150,
+            "text": "Rasakan napas masuk dan keluar tanpa mengubahnya.",
+            "hint": "Setiap kali kamu mengembuskan napas, ketuk satu titik. Sampai 10, lalu ulang dari awal."
+          },
+          {
+            "kind": "text",
+            "pose": "sit",
+            "text": "Kalau pikiran melayang, sadari lalu kembali ke napas, tanpa menyalahkan diri."
+          }
+        ]
+      },
+      {
+        "id": "ex_shutdown",
+        "title": "Ritual menutup hari kerja",
+        "duration_min": 5,
+        "suits": [
+          "lembur",
+          "deadline_kerja",
+          "beban_numpuk",
+          "umum"
+        ],
+        "benefit": "Memberi tanda jelas bahwa hari kerja sudah selesai.",
+        "steps": [
+          {
+            "kind": "write",
+            "text": "Tulis tiga hal yang sudah kamu selesaikan hari ini, sekecil apa pun."
+          },
+          {
+            "kind": "write",
+            "text": "Tulis satu hal pertama untuk besok pagi."
+          },
+          {
+            "kind": "text",
+            "pose": "sit",
+            "text": "Tutup laptop dan matikan notifikasi chat kantor jika memungkinkan."
+          },
+          {
+            "kind": "text",
+            "pose": "sit",
+            "text": "Katakan pada dirimu: 'Hari ini cukup.'"
+          }
+        ]
+      }
+    ],
+    "selection_rule": "Jika recommended_exercise_id kosong, pilih latihan pertama yang suits-nya mengandung trigger_key pertama; jika tidak ada, pakai ex_mindful_breath.",
+    "duration_note": "duration_min adalah perkiraan total. Tampilkan sebagai 'sekitar 3 menit'.",
+    "step_schema": "Lihat features.F1_micro_exercises.step_kinds. Field umum: kind, text, hint, icon, placeholder, pose, sequence, seconds, phases, rounds, max, loop."
+  },
+  "api_contract": {
+    "note": "Auth: header Authorization: Bearer <token>. user_id tidak dikirim dari FE. Response memakai pola { status, data }. Field baru hanya DITAMBAHKAN (backward compatible). Di build ini semua ini diimplementasikan sebagai fungsi di service layer.",
+    "error_format": {
+      "status": "error",
+      "code": "AI_PARSE_FAILED",
+      "message": "Coba lagi sebentar ya."
+    },
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/journal",
+        "request": {
+          "text": "Hari ini melelahkan, rapat dari pagi dan deadline laporan belum selesai."
+        },
+        "response": {
+          "status": "success",
+          "data": {
+            "journal_id": "j_123",
+            "daily_stress_score": 8,
+            "burnout_index": 67,
+            "trend": "rising",
+            "mood_status": "Beban tinggi hari ini",
+            "triggers": [
+              "Deadline kerja",
+              "Rapat beruntun"
+            ],
+            "trigger_keys": [
+              "deadline_kerja",
+              "rapat_beruntun"
+            ],
+            "trigger_category": "workload",
+            "remediation_tips": "Karena rapat beruntun dan deadline laporan menumpuk, coba pilih satu prioritas sebelum jam pulang, lalu jeda 10 menit tanpa layar.",
+            "recommended_exercise_id": "ex_one_priority",
+            "suggest_task_breaker": true,
+            "crisis_flag": false,
+            "created_at": "2026-11-01T14:30:00Z"
+          }
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/checkin",
+        "request": {
+          "mental_stress": 4,
+          "energy_drain": 4,
+          "sleep_bucket": "lt5",
+          "trigger_category": "workload"
+        },
+        "response": "Bentuk sama dengan POST /api/journal, ditambah interpretation_case (berat_ganda | tegang_mental | lelah_fisik | stabil) dan validation (string atau null). Dapat memakai ulang layar Result."
+      },
+      {
+        "method": "GET",
+        "path": "/api/journal/history?range=30d",
+        "response": {
+          "status": "success",
+          "data": [
+            {
+              "date": "2026-10-31",
+              "daily_stress_score": 5,
+              "burnout_index": 46
+            }
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/insight/weekly",
+        "response": {
+          "status": "success",
+          "data": {
+            "summary": "Bebanmu cenderung naik di awal minggu, biasanya saat deadline dan rapat menumpuk."
+          }
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/exercises",
+        "response": "lihat exercise_library_mock.exercises"
+      },
+      {
+        "method": "POST",
+        "path": "/api/exercise/session",
+        "request": {
+          "exercise_id": "ex_box_breathing",
+          "journal_id": "j_123",
+          "completed": true
+        },
+        "response": {
+          "status": "success",
+          "data": {
+            "session_id": "s_456"
+          }
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/followup/pending",
+        "response": {
+          "status": "success",
+          "data": {
+            "session_id": "s_456",
+            "exercise_id": "ex_box_breathing",
+            "exercise_title": "Napas kotak",
+            "done_at": "2026-10-31T20:10:00Z"
+          }
+        },
+        "note_when_none": "{ status: 'success', data: null }"
+      },
+      {
+        "method": "POST",
+        "path": "/api/exercise/feedback",
+        "request": {
+          "session_id": "s_456",
+          "helpful": 4
+        },
+        "response": {
+          "status": "success",
+          "data": {
+            "saved": true
+          }
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/triggers/summary?range=30d",
+        "response": {
+          "status": "success",
+          "data": {
+            "total_entries": 18,
+            "items": [
+              {
+                "key": "workload",
+                "label": "Beban dan deadline kerja",
+                "count": 9,
+                "percent": 50
+              }
+            ],
+            "summary": "Dalam 30 hari terakhir, beban dan deadline kerja paling sering muncul bersamaan dengan bebanmu yang tinggi."
+          }
+        }
+      },
+      {
+        "method": "GET/PUT",
+        "path": "/api/trusted-contact",
+        "response": {
+          "status": "success",
+          "data": {
+            "name": "Rani",
+            "relation": "Teman",
+            "phone": "(diisi user)"
+          }
+        },
+        "note_when_none": "data: null"
+      },
+      {
+        "method": "GET/PUT",
+        "path": "/api/break-plan",
+        "response": {
+          "status": "success",
+          "data": {
+            "end_time": "18:00",
+            "ritual_ids": [
+              "close_laptop",
+              "note_tomorrow"
+            ],
+            "reminder_enabled": true
+          }
+        },
+        "note": "reminder_enabled dipertahankan demi kompatibilitas dan dipetakan ke reminders.close_day.enabled."
+      },
+      {
+        "method": "POST",
+        "path": "/api/task/breakdown",
+        "request": {
+          "task": "Menyusun laporan kuartalan"
+        },
+        "response": {
+          "status": "success",
+          "data": {
+            "steps": [
+              {
+                "id": 1,
+                "text": "Kumpulkan data dan file yang dibutuhkan",
+                "minutes": 10
+              },
+              {
+                "id": 2,
+                "text": "Tulis kerangka laporan dalam poin singkat",
+                "minutes": 20
+              }
+            ]
+          }
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/report/summary?range=30d&include=trend,triggers,helpful,timing,entries,journal_text",
+        "response": {
+          "status": "success",
+          "data": {
+            "range": "30d",
+            "entries_count": 18,
+            "high_load_days": 6,
+            "weekday_pattern": [
+              1,
+              4,
+              2,
+              1,
+              0,
+              0,
+              0
+            ],
+            "trend": [
+              {
+                "date": "2026-10-31",
+                "burnout_index": 46
+              }
+            ],
+            "top_trigger_categories": [
+              {
+                "label": "Beban dan deadline kerja",
+                "count": 9,
+                "percent": 50
+              }
+            ],
+            "helpful_exercises": [
+              {
+                "title": "Napas kotak",
+                "avg_rating": 4.2
+              }
+            ]
+          }
+        },
+        "note": "include=entries dan journal_text hanya bila dicentang pengguna. journal_text default tidak disertakan."
+      },
+      {
+        "method": "GET",
+        "path": "/api/data/export?format=json",
+        "response": {
+          "status": "success",
+          "data": "objek JSON semua data milik user"
+        },
+        "note": "Opsi kedua untuk portabilitas data. Unduhan utama untuk manusia adalah PDF dari dokumen cetak."
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/data",
+        "response": {
+          "status": "success",
+          "data": {
+            "deleted": true
+          }
+        }
+      },
+      {
+        "method": "GET/PUT",
+        "path": "/api/reminders",
+        "response": {
+          "status": "success",
+          "data": {
+            "close_day": {
+              "enabled": false,
+              "time": "18:00",
+              "days": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
+            "daily_note": {
+              "enabled": false,
+              "time": "16:30",
+              "days": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
+            "calendar_title": "Waktunya menutup hari kerja"
+          }
+        },
+        "note": "Mock memakai localStorage. Default semua mati."
+      },
+      {
+        "method": "POST",
+        "path": "/api/hr/login",
+        "request": {
+          "email": "hrd@perusahaan.co.id",
+          "password": "(diisi user)"
+        },
+        "response": {
+          "status": "success",
+          "data": {
+            "token": "token-palsu",
+            "role": "hrd"
+          }
+        },
+        "note": "Simulasi di build ini."
+      },
+      {
+        "method": "GET",
+        "path": "/api/hr/divisions",
+        "response": {
+          "status": "success",
+          "data": [
+            {
+              "id": "all",
+              "name": "Semua divisi"
+            },
+            {
+              "id": "marketing",
+              "name": "Marketing"
+            },
+            {
+              "id": "it",
+              "name": "IT"
+            },
+            {
+              "id": "sales",
+              "name": "Sales"
+            },
+            {
+              "id": "ops",
+              "name": "Operasional"
+            },
+            {
+              "id": "other",
+              "name": "Divisi lain (digabung)"
+            }
+          ]
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/hr/dashboard?division=all",
+        "response": {
+          "status": "success",
+          "data": {
+            "suppressed": false,
+            "monthly_index": [
+              {
+                "month": "2026-01",
+                "index": 44
+              },
+              {
+                "month": "2026-02",
+                "index": 47
+              }
+            ],
+            "heatmap": {
+              "weeks": 4,
+              "cells": [
+                {
+                  "date": "2026-10-12",
+                  "high_load_percent": 22
+                },
+                {
+                  "date": "2026-10-13",
+                  "high_load_percent": null
+                }
+              ]
+            },
+            "drivers": [
+              {
+                "category": "workload",
+                "label": "Beban dan deadline kerja",
+                "percent": 50,
+                "count": 31
+              }
+            ],
+            "suggestions": [
+              {
+                "division": "Sales",
+                "category": "workload",
+                "weekday": "Jumat"
+              }
+            ]
+          }
+        },
+        "note": "Agregat dan sudah menerapkan ambang minimal 5 orang di server. Jika tidak terpenuhi: suppressed true dengan pesan ramah. Tanpa data per orang."
+      }
+    ]
+  },
+  "mock_data_requirements": [
+    "Minimal 29 hari riwayat dengan variasi realistis (naik, turun, satu minggu berat). Hitung ulang dengan rumus scoring_rules agar angka dan zona konsisten.",
+    "Skenario respons: zona calm, watch, heavy; crisis_flag = true (tanpa skor dan tanpa latihan); error; pengguna baru tanpa data.",
+    "Skenario: followup pending ada/kosong; peta pemicu terisi/kosong (< 5 entri); kontak tepercaya ada/belum; break plan aktif/nonaktif.",
+    "Pemicu uji di mock (sebutkan di README): teks mengandung '#error' memicu skenario error; frasa krisis eksplisit memicu crisis_flag = true.",
+    "Semua data mock berkonteks pekerja perusahaan.",
+    "Dasbor HRD: dataset agregat 12 bulan untuk minimal 5 divisi (Marketing, IT, Sales, Operasional, dan satu divisi kecil yang digabung ke 'Divisi lain'). Sertakan satu skenario ambang tidak terpenuhi (kurang dari 5 orang), satu skenario loading, satu skenario error, dan satu skenario kosong.",
+    "Variasi bermakna antar divisi (mis. Sales: beban dan deadline kerja tinggi di hari Jumat; IT: pemicu terbanyak hubungan dengan atasan atau rekan kerja)."
+  ],
+  "ai_integration_plan": {
+    "status": "TIDAK dibangun di build ini. Dokumentasikan di README.",
+    "architecture": "Frontend memanggil backend. Backend memanggil Gemini. API key Gemini TIDAK BOLEH ada di kode frontend.",
+    "model_usage": "Prompting dengan keluaran JSON terstruktur sesuai skema POST /api/journal. Tidak ada pelatihan model.",
+    "guardrails": [
+      "System prompt: pendamping refleksi, bukan diagnosis, tanpa klaim medis, nada hangat memakai 'kamu'.",
+      "crisis_flag = true jika ada sinyal eksplisit menyakiti diri atau bunuh diri. Tambahkan pemeriksaan kata kunci di backend sebagai lapis kedua.",
+      "Validasi keluaran model terhadap skema. Jika gagal, kembalikan error AI_PARSE_FAILED yang ramah.",
+      "Skor dan indeks dihitung oleh kode (scoring_rules), bukan oleh model, agar konsisten."
+    ],
+    "privacy_warning": "Jurnal sangat pribadi. Layanan gratis model AI biasanya dapat memakai data untuk meningkatkan produk (verifikasi syarat Gemini API terbaru). Sebelum ada pengguna nyata, pertimbangkan tier berbayar atau pengaturan yang tidak memakai data, dan sesuaikan teks privasi di UI agar jujur."
+  },
+  "accessibility": [
+    "Kontras teks minimal WCAG AA.",
+    "Area sentuh minimal 44x44 px.",
+    "Fokus keyboard terlihat jelas.",
+    "Warna zona SELALU disertai label teks.",
+    "Textarea, tombol, dan chip punya label aria; chip memakai aria-pressed.",
+    "Chart punya ringkasan teks alternatif.",
+    "prefers-reduced-motion dihormati.",
+    "Tombol hanya-ikon punya aria-label (Keluar, Sebelumnya, Jeda).",
+    "Panduan napas punya aria-label ringkas untuk seluruh langkah (mis. 'Tarik napas 4 detik, tahan 4, embuskan 4, tahan 4, ulangi 5 putaran'). Angka hitung mundur tidak diumumkan tiap detik; teks fase boleh aria-live polite hanya saat fase berganti.",
+    "tap_count memakai tombol dengan target 44px dan label 'Titik 3 dari 5'.",
+    "Kontras AA di tema terang dan gelap, termasuk border_control untuk input.",
+    "Heatmap dan diagram lingkaran tidak mengandalkan warna: angka persen tertulis dan ada ringkasan teks alternatif.",
+    "Form login HRD punya label, pesan error terbaca screen reader, dan fokus keyboard jelas."
+  ],
+  "work_plan": [
+    "0. Cek proyek ada atau tidak, ringkas rencana dalam maksimal 10 baris.",
+    "1. Token CSS DUA TEMA (terang dan gelap), skrip tema di <head>, font, ikon, komponen dasar, Companion.",
+    "2. Service layer + data mock (src/api.ts, src/careContacts.ts).",
+    "3. P0: Login simulasi, Home, Tulis, Hasil (momen wow), Tren, Care Mode, Check-in cepat, Latihan dengan panduan visual (ikuti build_order F1).",
+    "4. Cek definition_of_done untuk P0. Perbaiki sebelum lanjut.",
+    "4b. F12: Login HRD dan Dasbor HRD agregat (wajib untuk lomba) dengan data mock agregat, sebelum mulai P1.",
+    "5. P1: Tindak lanjut, Peta pemicu, Unduh catatanku (PDF), Pengingat (F10 + manifest + sw.js), tombol tema, Kontak tepercaya, History, Settings.",
+    "6. P2 jika waktu ada: Jeda dan batas, Pemecah tugas, Ringkasan konselor, Landing.",
+    "7. README: cara menjalankan, skenario mock, catatan privasi, catatan scoring heuristik, batas notifikasi frontend-only, rencana Web Push dan Gemini."
+  ],
+  "definition_of_done": [
+    "Tidak ada gradasi, bayangan tebal, emoji, atau ikon sparkle/robot di mana pun.",
+    "Warna aksen hanya untuk status dan selalu berlabel teks.",
+    "Tepat 3 tab di bottom nav.",
+    "Loading (skeleton), kosong, dan error ada di setiap layar yang bergantung data.",
+    "crisis_flag = true selalu mengalahkan semua rekomendasi dan tidak menampilkan skor.",
+    "Tidak ada kata diagnosis atau klaim 'menurunkan burnout' di UI atau README.",
+    "Tidak ada nomor telepon bantuan di kode komponen.",
+    "Tidak ada teks 'lo/gue/Bro', teks mahasiswa, atau nama lama.",
+    "Reduced motion dan fokus keyboard berfungsi.",
+    "Check-in cepat selesai kurang dari 30 detik tanpa mengetik.",
+    "Lolos anti_slop_checklist.",
+    "Setiap langkah latihan punya panduan visual sesuai jenisnya, dan tombol Sebelumnya berfungsi di semua langkah.",
+    "Reduced motion: panduan napas tetap bisa diikuti lewat teks dan angka.",
+    "Teks 'Tulisan ini tidak disimpan' benar: tidak ada penyimpanan sama sekali.",
+    "PDF A4 tercetak rapi dan tetap terbaca hitam-putih; JSON hanya opsi kedua.",
+    "Pengingat default mati, izin hanya diminta setelah toggle dinyalakan, teks notifikasi tanpa skor atau kata burnout, tombol 'Tes pengingat' berfungsi.",
+    "Dua tema lolos AA dan tidak ada kedip tema saat muat.",
+    "Tidak ada fitur yang menampilkan data atau teks individu ke perusahaan atau atasan. Dasbor HRD hanya agregat dengan ambang minimal 5 orang dan tanpa entri crisis_flag.",
+    "Banner privasi dasbor HRD selalu tampil di atas dan teksnya sesuai features.F12_hr_dashboard.banner.",
+    "Login HRD memakai role guard: karyawan tidak bisa membuka /hrd dan HRD tidak bisa membuka halaman karyawan.",
+    "Dasbor HRD tanpa gradasi: heatmap 4 tingkat solid netral dan diagram lingkaran solid netral."
+  ],
+  "anti_slop_checklist": [
+    "Ada gradasi di mana pun? Jika ya, hapus.",
+    "Hanya satu elemen yang menonjol (Companion dan hitung naik)?",
+    "Ada eyebrow ALL CAPS, titik tengah meta, atau tanda panah di tiap tombol? Jika ya, hapus.",
+    "Ada grid kartu identik atau hero rata tengah? Jika ya, ubah.",
+    "Teksnya spesifik dan manusiawi, bukan slogan?",
+    "Hierarki jelas hanya dengan ukuran dan bobot font?",
+    "Ruang kosong cukup? Setiap kartu punya tujuan?",
+    "Ada animasi masuk yang bukan di layar Hasil? Jika ya, hapus.",
+    "Mode gelap bukan sekadar inversi: tanpa hitam murni, wajah Companion tetap terbaca, pita zona memakai tint gelap?"
+  ],
+  "post_mvp_not_in_this_build": {
+    "hr_aggregate_dashboard": {
+      "status": "Tampilan dibangun di build ini (F12) dengan data mock. Yang tersisa untuk backend nyata:",
+      "backend_prerequisites": [
+        "Agregasi dan ambang minimal 5 orang diberlakukan di server, bukan hanya di frontend.",
+        "Penyimpanan opt-in pengguna dan data divisi dengan kebijakan yang jelas.",
+        "Pengecualian entri crisis_flag dari agregasi.",
+        "Klaim privasi di UI hanya tayang jika semua poin di atas terpenuhi."
+      ]
+    },
+    "whatsapp_nudge": {
+      "prerequisites": [
+        "backend",
+        "WhatsApp Business API dengan opt-in",
+        "kebijakan data nomor HP"
+      ],
+      "note": "Efek terhadap retensi belum terbukti. Uji dulu dengan pengingat dalam aplikasi (F6)."
+    },
+    "validation_pilot": "Pilot kecil dengan instrumen burnout tervalidasi pra dan pasca pemakaian untuk menguji klaim.",
+    "web_push_server": {
+      "prerequisites": [
+        "backend dengan kunci VAPID",
+        "endpoint POST /api/push/subscribe dan DELETE",
+        "handler push di sw.js",
+        "penjadwal di server dan kebijakan data",
+        "opt-in jelas"
+      ],
+      "note": "Satu-satunya cara notifikasi andal saat aplikasi tertutup tanpa kalender."
+    },
+    "hr_dashboard_status": "Dasbor HRD agregat termasuk di build ini (F12). Ringkasan konselor dan unduhan data tetap milik pengguna dan tidak dikirim ke perusahaan."
+  },
+  "output_expectations": {
+    "deliver": "Kode yang berjalan dengan npm install dan npm run dev. Setelah selesai berikan: (1) daftar file yang dibuat, (2) ringkasan token desain, (3) daftar skenario mock dan cara memicunya, (4) README singkat, (5) daftar hal yang belum dibangun (tier yang tertinggal).",
+    "communication": "Jika ada hal ambigu, tanyakan satu pertanyaan lalu lanjutkan dengan asumsi terbaik. Jangan meminta izin untuk hal yang jelas.",
+    "quality_bar": "Tampilan harus terasa dirancang oleh manusia dengan selera, bukan template AI. Selesaikan P0 dengan rapi sebelum menambah fitur."
+  },
+  "printable_documents": {
+    "engine": "window.print() dengan @media print, tanpa library. Satu komponen <ReportDocument mode> dipakai oleh F8 (mode 'konselor') dan F9 (mode 'data_saya').",
+    "limits": "Ini membuka jendela cetak browser lalu pengguna memilih 'Simpan sebagai PDF'. Bukan unduhan langsung. Pembuatan PDF langsung butuh library, ditunda. Uji di Chrome desktop dan Android; iPhone perlu diuji manual.",
+    "page": "A4 potret, margin 16mm, latar putih, teks hitam, selalu tema terang. Plus Jakarta Sans dengan fallback, isi 11pt.",
+    "plain_language_rules": [
+      "Tanpa istilah teknis atau key mentah (burnout_index, trigger_key).",
+      "Kalimat sentence case. Angka selalu dengan satuan atau penjelasan.",
+      "Tidak bergantung pada warna: setiap zona berlabel teks.",
+      "Dokumen konselor maksimal 2 halaman (di luar teks jurnal)."
+    ],
+    "sections": [
+      {
+        "id": "header",
+        "content": "'Ringkasan catatan Aura', rentang tanggal, tanggal dibuat. Mode data_saya: 'Salinan catatan Aura'."
+      },
+      {
+        "id": "gambaran",
+        "title": "Gambaran singkat",
+        "content": "2-3 kalimat dari template, non-kausal. Contoh: 'Dalam 30 hari terakhir kamu mencatat 18 kali. Bebanmu tinggi (skor 7 ke atas) pada 6 hari. Hari yang paling sering tinggi: Senin.'"
+      },
+      {
+        "id": "tren",
+        "title": "Tren beban",
+        "content": "Grafik SVG dengan pita zona tint solid (print-color-adjust: exact), legenda teks: 'Tenang 0-39, Waspada 40-69, Butuh istirahat 70-100', dan satu kalimat penjelasan: 'Indeks ini gambaran pola dari catatan harianmu, bukan diagnosis.'"
+      },
+      {
+        "id": "pemicu",
+        "title": "Yang sering muncul saat bebanmu tinggi",
+        "content": "Tabel: Pemicu | Berapa kali | Persen. Wajib menampilkan jumlah."
+      },
+      {
+        "id": "pola_hari",
+        "title": "Pola hari dan waktu",
+        "content": "Batang per hari dalam seminggu dengan jumlah, plus jumlah catatan saat jam kerja dan setelah jam kerja."
+      },
+      {
+        "id": "membantu",
+        "title": "Langkah kecil yang terasa membantu",
+        "content": "Daftar latihan dengan rating tinggi. Opsional."
+      },
+      {
+        "id": "catatan",
+        "title": "Catatan dariku",
+        "content": "Teks bebas opsional dari pengguna (mode konselor)."
+      },
+      {
+        "id": "daftar",
+        "title": "Daftar catatan",
+        "content": "Mode data_saya: tabel Tanggal | Beban hari ini | Pemicu."
+      },
+      {
+        "id": "jurnal",
+        "title": "Teks jurnal",
+        "content": "Hanya jika dicentang eksplisit. Satu entri per blok dengan judul tanggal. Default mati."
+      },
+      {
+        "id": "footer",
+        "content": "Di tiap halaman: 'Ringkasan ini bukan diagnosis. Hanya gambaran pola dari catatanmu sendiri.' dan 'Dibuat oleh Aura pada [tanggal]. Aura tidak mengirim dokumen ini ke siapa pun.'"
+      }
+    ],
+    "print_css": [
+      "Sembunyikan nav, tombol, dan kontrol pratinjau.",
+      "page-break-inside: avoid pada tabel dan grafik.",
+      "Teks hitam di putih, pemisah border 1px abu.",
+      "Paksa tema terang walau aplikasi sedang mode gelap."
+    ]
+  },
+  "interaction_rules": [
+    "Setiap alur bertahap (latihan, hapus data dua langkah) punya cara kembali yang jelas.",
+    "Keluar di tengah proses meminta konfirmasi singkat yang ramah. Tidak ada data hilang diam-diam.",
+    "Tombol aksi di-debounce agar ketukan ganda tidak melompati langkah.",
+    "Tombol keluar atau tutup selalu terlihat di layar penuh dan sheet."
+  ]
+}

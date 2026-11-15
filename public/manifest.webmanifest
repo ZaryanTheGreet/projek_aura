@@ -1,0 +1,17 @@
+{
+  "name": "Aura",
+  "short_name": "Aura",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F4EF",
+  "theme_color": "#F6F4EF",
+  "description": "Pendamping refleksi harian untuk pekerja",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Aura",
+  "description": "Pendamping refleksi harian untuk pekerja: catat hari kerjamu, pantau beban dari hari ke hari, dan dapatkan satu langkah kecil yang masuk akal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
